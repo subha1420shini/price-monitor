@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PriceWatch — E-commerce Price Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+
+<!-- ===== Navbar ===== -->
+<nav class="navbar">
+  <div class="brand"><span class="dot"></span> Price<span style="color:var(--accent)">Watch</span></div>
+
+  <div class="nav-links hidden" id="navLinks">
+    <button data-page="home" class="active">Home</button>
+    <button data-page="dashboard">Dashboard</button>
+    <button data-page="products">Products</button>
+    <button data-page="settings">Settings</button>
+  </div>
+
+  <div class="nav-right">
+    <div class="theme-toggle" id="themeToggle" title="Toggle theme"><div class="knob">☾</div></div>
+    <div id="authStatus" class="auth-status"></div>
+  </div>
+</nav>
+
+<!-- ===== AUTH SCREEN ===== -->
+<section id="authScreen" class="auth-screen">
+  <div class="panel auth-card">
+    <h2 id="authTitle">Login</h2>
+    <input class="input" type="email" id="authEmail" placeholder="Email">
+    <input class="input" type="password" id="authPassword" placeholder="Password">
+    <button id="authSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;">Login</button>
+    <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Register</a></p>
+    <p id="authError" class="error-text"></p>
+  </div>
+</section>
+
+<!-- ===== HOME ===== -->
+<section class="view" id="view-home">
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="section-label">Price intelligence, for you</div>
+        <h1>Know the moment<br>a price <em>drops</em>.</h1>
+        <p class="lead">PriceWatch tracks products across Amazon and Flipkart, compares them side by side, and emails you the instant one hits the price you're willing to pay.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" onclick="goToPage('dashboard')">Open dashboard →</button>
+          <button class="btn btn-ghost" onclick="goToPage('products')">Browse products</button>
+        </div>
+        <div class="hero-stats" id="heroStats"></div>
+      </div>
+      <div class="monitor-card">
+        <div class="monitor-head"><h3>Live tracked prices</h3><span class="live">LIVE</span></div>
+        <div id="monitorList"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DASHBOARD ===== -->
+<section class="view" id="view-dashboard">
+  <div class="container page-pad">
+    <div class="section-label">Overview</div>
+    <h2 class="page-title">Dashboard</h2>
+
+    <div class="panel" style="margin-bottom:22px;">
+      <h3>Track a new product</h3>
+      <p class="sub">Paste a product link from Amazon or Flipkart, set your target price.</p>
+      <div class="filter-bar">
+        <input class="input" type="url" id="productUrl" placeholder="Paste Amazon or Flipkart product URL">
+        <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
+        <button id="addProductBtn" class="btn btn-primary">Track</button>
+      </div>
+      <p id="addProductStatus" class="sub"></p>
+    </div>
+
+    <div class="grid kpi-grid" id="kpiGrid"></div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h3>Recently tracked</h3>
+      <p class="sub">Click a product to see its price history.</p>
+      <div id="dashboardGrid" class="product-grid"></div>
+    </div>
+
+    <div class="panel chart-section hidden" id="chartSection" style="margin-top:20px;">
+      <h3 id="chartTitle">Price history</h3>
+      <div class="chart-box"><canvas id="priceChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRODUCTS ===== -->
+<section class="view" id="view-products">
+  <div class="container page-pad">
+    <div class="section-label">Catalog</div>
+    <h2 class="page-title">All products</h2>
+
+    <div class="filter-bar">
+      <input class="input" id="searchInput" placeholder="Search your tracked products...">
+    </div>
+    <div class="chip-row" id="categoryChips"></div>
+
+    <div id="productsGrid" class="product-grid"></div>
+  </div>
+</section>
+
+<!-- ===== SETTINGS ===== -->
+<section class="view" id="view-settings">
+  <div class="container page-pad">
+    <div class="section-label">Account</div>
+    <h2 class="page-title">Settings</h2>
+
+    <div class="panel" style="max-width:600px;">
+      <div class="profile-header">
+        <div class="profile-pic-wrap" id="profilePicWrap" onclick="document.getElementById('picFileInput').click()">
+          <span id="profileInitial">?</span>
+          <div class="pic-edit-overlay">Change</div>
+        </div>
+        <input type="file" id="picFileInput" accept="image/*" class="hidden">
+        <div>
+          <div class="profile-name" id="profileNameDisplay">Your name</div>
+          <div class="sub" id="profileEmailDisplay">—</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:20px;">Profile</h3>
+      <div class="settings-row"><label>Full name</label><input class="input" type="text" id="settingsName" placeholder="Your name"></div>
+      <div class="settings-row"><label>Phone number</label><input class="input" type="tel" id="settingsPhone" placeholder="e.g. 9876543210"></div>
+      <div class="settings-row"><label>Age</label><input class="input" type="number" id="settingsAge" placeholder="e.g. 21"></div>
+      <div class="settings-row"><label>Email</label><div class="settings-value" id="settingsEmail">—</div></div>
+
+      <button id="saveSettingsBtn" class="btn btn-primary" style="margin-top:6px;">Save changes</button>
+      <p id="settingsStatus" class="sub"></p>
+
+      <div class="divider"></div>
+      <h3>Appearance</h3>
+      <p class="sub">Switch between dark and light mode using the toggle in the top-right corner.</p>
+
+      <div class="divider"></div>
+      <button id="logoutBtnSettings" class="btn btn-ghost" style="border-color:var(--danger); color:var(--danger);">Log out</button>
+    </div>
+  </div>
+</section>
+
+<script src="script.js"></script>
+</body>
+</html>
