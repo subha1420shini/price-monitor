@@ -1,5 +1,5 @@
 // Point this at wherever your FastAPI backend is running.
-const API_BASE = "https://price-monitor-backend-dmqa.onrender.com";
+const API_BASE = "https://pricemonitor-backend.onrender.com";
 
 let token = safeGet("token");
 let allProducts = [];
