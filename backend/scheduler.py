@@ -52,7 +52,7 @@ def check_all_products():
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
-   scheduler.add_job(check_all_products, "interval", hours=1, id="price_check", next_run_time=datetime.utcnow())
+    scheduler.add_job(check_all_products, "interval", hours=1, id="price_check", next_run_time=datetime.utcnow())
     scheduler.start()
-    logger.info("Scheduler started — checking every 6 hours")
+    logger.info("Scheduler started — checking every hour")
     return scheduler
