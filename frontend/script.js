@@ -224,15 +224,15 @@ function renderDashboard() {
   const totalProducts = allProducts.length;
   const targetsHit = allProducts.filter(p => p.current_price != null && p.current_price <= p.target_price).length;
   const categories = new Set(allProducts.map(p => p.category).filter(Boolean));
-  const avgPrice = allProducts.length
-    ? Math.round(allProducts.reduce((sum, p) => sum + (p.current_price || 0), 0) / allProducts.length)
-    : 0;
+
+  const totalCurrent = allProducts.reduce((sum, p) => sum + (p.current_price || 0), 0);
+  const totalTarget = allProducts.reduce((sum, p) => sum + (p.target_price || 0), 0);
 
   document.getElementById("kpiGrid").innerHTML = `
     <div class="kpi-card"><div class="value">${totalProducts}</div><div class="label">Products tracked</div></div>
     <div class="kpi-card"><div class="value">${targetsHit}</div><div class="label">Targets hit</div></div>
-    <div class="kpi-card"><div class="value">${categories.size}</div><div class="label">Categories</div></div>
-    <div class="kpi-card"><div class="value">₹${avgPrice.toLocaleString()}</div><div class="label">Average price</div></div>
+    <div class="kpi-card"><div class="value">₹${totalCurrent.toLocaleString()}</div><div class="label">Total current price</div></div>
+    <div class="kpi-card"><div class="value">₹${totalTarget.toLocaleString()}</div><div class="label">Total target price</div></div>
   `;
 
   document.getElementById("dashboardGrid").innerHTML = pairs.slice(0, 6).map(productCardHTML).join("")

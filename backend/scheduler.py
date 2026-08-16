@@ -1,4 +1,4 @@
-"""Background job: every 6 hours, re-check every tracked product's price."""
+"""Background job: every 1 hours, re-check every tracked product's price."""
 import logging
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -52,7 +52,7 @@ def check_all_products():
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(check_all_products, "interval", hours=6, id="price_check", next_run_time=datetime.utcnow())
+   scheduler.add_job(check_all_products, "interval", hours=1, id="price_check", next_run_time=datetime.utcnow())
     scheduler.start()
     logger.info("Scheduler started — checking every 6 hours")
     return scheduler
