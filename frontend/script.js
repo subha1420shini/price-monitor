@@ -165,6 +165,7 @@ function productCardHTML(pair) {
   const { main: p, twin } = pair;
   const cheaper = twin && twin.current_price < p.current_price ? twin : p;
   const hitTarget = cheaper.current_price != null && cheaper.current_price <= cheaper.target_price;
+
   const imageHTML = p.image_url
     ? `<img src="${p.image_url}" alt="${p.name}" onerror="this.parentElement.innerHTML='<span class=&quot;no-image&quot;>No image</span>'">`
     : `<span class="no-image">No image</span>`;
@@ -175,15 +176,15 @@ function productCardHTML(pair) {
       <div class="card-body">
         ${p.category ? `<span class="category-tag">${p.category}</span>` : ''}
         <div class="name" onclick="showChart(${p.id}, '${p.name.replace(/'/g, "\\'")}')">${p.name}</div>
-        <a href="${p.url}" target="_blank" rel="noopener" class="site-row ${cheaper === p || !twin ? 'cheaper' : ''}">
+        <div class="site-row ${cheaper === p || !twin ? 'cheaper' : ''}" style="cursor:pointer" onclick="openFreshPrice(${p.id}, '${p.url}')">
           <span class="site-label">${p.site} ↗</span>
-          <span class="price">${p.current_price != null ? '₹' + p.current_price.toLocaleString() : '—'}</span>
-        </a>
+          <span class="price" id="price-${p.id}">${p.current_price != null ? '₹' + p.current_price.toLocaleString() : '—'}</span>
+        </div>
         ${twin ? `
-        <a href="${twin.url}" target="_blank" rel="noopener" class="site-row ${cheaper === twin ? 'cheaper' : ''}">
+        <div class="site-row ${cheaper === twin ? 'cheaper' : ''}" style="cursor:pointer" onclick="openFreshPrice(${twin.id}, '${twin.url}')">
           <span class="site-label">${twin.site} ↗</span>
-          <span class="price">${twin.current_price != null ? '₹' + twin.current_price.toLocaleString() : '—'}</span>
-        </a>` : ''}
+          <span class="price" id="price-${twin.id}">${twin.current_price != null ? '₹' + twin.current_price.toLocaleString() : '—'}</span>
+        </div>` : ''}
         <div class="target-row">
           <span>Target: ₹${p.target_price.toLocaleString()}</span>
           ${hitTarget ? '<span class="badge lowest">Target hit!</span>' : ''}
@@ -193,6 +194,29 @@ function productCardHTML(pair) {
   `;
 }
 
+// Refreshes a single product's price right before opening its page,
+// so the number shown matches the live site as closely as possible.
+async function openFreshPrice(productId, url) {
+  const priceEl = document.getElementById(`price-${productId}`);
+  if (priceEl) priceEl.textContent = "…";
+
+  try {
+    const res = await fetch(`${API_BASE}/products/${productId}/refresh`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      if (priceEl && updated.current_price != null) {
+        priceEl.textContent = "₹" + updated.current_price.toLocaleString();
+      }
+    }
+  } catch (e) {
+    // if refresh fails, we still open the page with the last known price shown
+  }
+
+  window.open(url, "_blank", "noopener");
+}
 // ================= HOME PAGE =================
 function renderHome() {
   const totalProducts = allProducts.length;

@@ -23,7 +23,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-
+from datetime import datetime
 import models
 import schemas
 from database import engine, get_db, Base
@@ -168,6 +168,27 @@ def delete_product(product_id: int, db: Session = Depends(get_db), user: models.
     db.delete(product)
     db.commit()
     return {"message": "Product deleted"}
+@app.post("/products/{product_id}/refresh", response_model=schemas.ProductOut)
+def refresh_product(product_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
+    product = (
+        db.query(models.Product)
+        .filter(models.Product.id == product_id, models.Product.owner_id == user.id)
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    try:
+        scraped = scrape_product(product.url)
+        product.current_price = scraped["price"]
+        product.last_checked = datetime.utcnow()
+        db.add(models.PriceHistory(product_id=product.id, price=scraped["price"]))
+        db.commit()
+        db.refresh(product)
+    except Exception:
+        pass  # if the live site is unreachable, just show the last known price
+
+    return product
     # ============ SETTINGS ROUTES ============
 
 @app.get("/settings", response_model=schemas.UserOut)
