@@ -13,6 +13,9 @@ these endpoints:
                                    on the other platform)
   GET  /products/{id}         -> get one product's full details + price history
   DELETE /products/{id}       -> stop tracking a product
+  POST /products/{id}/refresh -> re-scrape a single product right now
+  GET  /settings               -> get the logged-in user's profile
+  PUT  /settings               -> update the logged-in user's profile
 
 Run this with: uvicorn main:app --reload
 Then open http://127.0.0.1:8000/docs to test everything interactively.
@@ -64,6 +67,7 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     return user
+
 
 @app.post("/auth/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -168,6 +172,8 @@ def delete_product(product_id: int, db: Session = Depends(get_db), user: models.
     db.delete(product)
     db.commit()
     return {"message": "Product deleted"}
+
+
 @app.post("/products/{product_id}/refresh", response_model=schemas.ProductOut)
 def refresh_product(product_id: int, db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     product = (
@@ -189,11 +195,14 @@ def refresh_product(product_id: int, db: Session = Depends(get_db), user: models
         pass  # if the live site is unreachable, just show the last known price
 
     return product
-    # ============ SETTINGS ROUTES ============
+
+
+# ============ SETTINGS ROUTES ============
 
 @app.get("/settings", response_model=schemas.UserOut)
 def get_settings(user: models.User = Depends(get_current_user)):
     return user
+
 
 @app.put("/settings", response_model=schemas.UserOut)
 def update_settings(
@@ -219,5 +228,5 @@ def update_settings(
 @app.on_event("startup")
 def on_startup():
     # Starts the background scheduler that re-checks all tracked products
-    # every 6 hours, for as long as this server keeps running.
+    # every hour, for as long as this server keeps running.
     start_scheduler()
