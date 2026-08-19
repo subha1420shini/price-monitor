@@ -62,3 +62,11 @@ class ProductOut(BaseModel):
 
 class ProductDetail(ProductOut):
     price_history: List[PriceHistoryOut] = []
+    class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str

@@ -14,6 +14,8 @@ class User(Base):
     name = Column(String, nullable=True)
     age = Column(Integer, nullable=True)
     profile_picture_url = Column(String, nullable=True)
+    reset_code = Column(String, nullable=True)
+    reset_code_expiry = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     products = relationship("Product", back_populates="owner", cascade="all, delete")
 

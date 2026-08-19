@@ -51,3 +51,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+    import re
+
+def validate_password_strength(password: str):
+    if len(password) < 8:
+        raise ValueError("Password must be at least 8 characters long")
+    if not re.search(r"[A-Za-z]", password):
+        raise ValueError("Password must include at least one letter")
+    if not re.search(r"[0-9]", password):
+        raise ValueError("Password must include at least one number")
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-+=]", password):
+        raise ValueError("Password must include at least one symbol")
