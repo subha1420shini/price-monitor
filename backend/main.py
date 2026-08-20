@@ -1,49 +1,31 @@
 """
 main.py
 -------
-This is the entry point of the backend. It wires together the database,
-models, auth, scraper, and scheduler into one FastAPI application with
-these endpoints:
-
-  POST /auth/register        -> create a new user
-  POST /auth/login           -> log in, get a JWT token
-  GET  /products              -> list all products the logged-in user tracks
-  POST /products               -> add a new product to track (scrapes it immediately,
-                                   and tries to find + track the matching product
-                                   on the other platform)
-  GET  /products/{id}         -> get one product's full details + price history
-  DELETE /products/{id}       -> stop tracking a product
-  POST /products/{id}/refresh -> re-scrape a single product right now
-  GET  /settings               -> get the logged-in user's profile
-  PUT  /settings               -> update the logged-in user's profile
-
-Run this with: uvicorn main:app --reload
-Then open http://127.0.0.1:8000/docs to test everything interactively.
+Entry point wiring database, models, auth (with email verification and
+password reset), scraper (multi-site), and scheduler into one FastAPI app.
 """
 
+import uuid
 from typing import List
+from datetime import datetime, timedelta
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime
+
 import models
 import schemas
 from database import engine, get_db, Base
-from auth import hash_password, verify_password, create_access_token, get_current_user
-from scraper import scrape_product, find_cross_platform_match
+from auth import hash_password, verify_password, create_access_token, get_current_user, generate_otp
+from alerts import send_verification_email, send_reset_code_email
+from scraper import scrape_product, find_all_platform_matches
 from scheduler import start_scheduler
 
-# Creates all tables in the database if they don't already exist.
-# (For a real production app you'd use Alembic migrations instead, but for
-# a final-year project this "create on startup" approach is perfectly fine.)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="PriceWatch API", description="Cloud-based e-commerce price monitoring and alert system")
+app = FastAPI(title="PriceLens API", description="Cloud-based e-commerce price monitoring and alert system")
 
-# Allows the frontend (running on a different port, e.g. localhost:5500)
-# to call this API from the browser. In production, replace "*" with your
-# actual frontend domain for better security.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,7 +35,7 @@ app.add_middleware(
 )
 
 
-# ============ AUTH ROUTES ============
+# ============ AUTH ============
 
 @app.post("/auth/register", response_model=schemas.UserOut)
 def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -62,34 +44,113 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists")
 
-    user = models.User(email=email, hashed_password=hash_password(payload.password))
+    code = generate_otp()
+    user = models.User(
+        email=email,
+        hashed_password=hash_password(payload.password),
+        is_verified=False,
+        verification_code=code,
+        verification_code_expiry=datetime.utcnow() + timedelta(minutes=10),
+    )
     db.add(user)
     db.commit()
     db.refresh(user)
+    send_verification_email(email, code)
     return user
+
+
+@app.post("/auth/verify-email", response_model=schemas.Token)
+def verify_email(payload: schemas.VerifyEmailRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Email does not exist")
+    if user.is_verified:
+        token = create_access_token({"sub": user.email})
+        return {"access_token": token, "token_type": "bearer"}
+    if not user.verification_code or user.verification_code != payload.code:
+        raise HTTPException(status_code=400, detail="Incorrect verification code")
+    if user.verification_code_expiry and datetime.utcnow() > user.verification_code_expiry:
+        raise HTTPException(status_code=400, detail="Verification code expired, please request a new one")
+
+    user.is_verified = True
+    user.verification_code = None
+    user.verification_code_expiry = None
+    db.commit()
+
+    token = create_access_token({"sub": user.email})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@app.post("/auth/resend-code")
+def resend_code(payload: schemas.ResendCodeRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Email does not exist")
+    code = generate_otp()
+    user.verification_code = code
+    user.verification_code_expiry = datetime.utcnow() + timedelta(minutes=10)
+    db.commit()
+    send_verification_email(email, code)
+    return {"message": "Verification code resent"}
 
 
 @app.post("/auth/login", response_model=schemas.Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     email = form_data.username.strip().lower()
     user = db.query(models.User).filter(models.User.email == email).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
-        )
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email does not exist")
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+    if not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email before logging in")
+
     token = create_access_token({"sub": user.email})
     return {"access_token": token, "token_type": "bearer"}
 
 
-# ============ PRODUCT ROUTES ============
+@app.post("/auth/forgot-password")
+def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Email does not exist")
+    code = generate_otp()
+    user.reset_code = code
+    user.reset_code_expiry = datetime.utcnow() + timedelta(minutes=10)
+    db.commit()
+    send_reset_code_email(email, code)
+    return {"message": "Reset code sent to your email"}
+
+
+@app.post("/auth/reset-password")
+def reset_password(payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Email does not exist")
+    if not user.reset_code or user.reset_code != payload.code:
+        raise HTTPException(status_code=400, detail="Incorrect reset code")
+    if user.reset_code_expiry and datetime.utcnow() > user.reset_code_expiry:
+        raise HTTPException(status_code=400, detail="Reset code expired, please request a new one")
+
+    user.hashed_password = hash_password(payload.new_password)
+    user.reset_code = None
+    user.reset_code_expiry = None
+    db.commit()
+    return {"message": "Password reset successful"}
+
+
+# ============ PRODUCTS ============
 
 @app.get("/products", response_model=List[schemas.ProductOut])
 def list_products(db: Session = Depends(get_db), user: models.User = Depends(get_current_user)):
     return db.query(models.Product).filter(models.Product.owner_id == user.id).all()
 
 
-@app.post("/products", response_model=schemas.ProductDetail)
+@app.post("/products", response_model=List[schemas.ProductOut])
 def add_product(
     payload: schemas.ProductCreate,
     db: Session = Depends(get_db),
@@ -100,7 +161,10 @@ def add_product(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read price from that URL: {e}")
 
-    product = models.Product(
+    group_id = str(uuid.uuid4())
+    created = []
+
+    main_product = models.Product(
         owner_id=user.id,
         name=scraped["name"],
         url=str(payload.url),
@@ -109,43 +173,42 @@ def add_product(
         current_price=scraped["price"],
         image_url=scraped.get("image_url"),
         category=scraped.get("category"),
+        group_id=group_id,
+        is_primary=True,
     )
-    db.add(product)
+    db.add(main_product)
     db.commit()
-    db.refresh(product)
-    db.add(models.PriceHistory(product_id=product.id, price=scraped["price"]))
+    db.refresh(main_product)
+    db.add(models.PriceHistory(product_id=main_product.id, price=scraped["price"]))
     db.commit()
+    created.append(main_product)
 
-    # Try to find and track the same product on the other platform.
-    # If this fails for any reason, we don't want it to break adding the
-    # original product - so it's wrapped in its own try/except.
+    # Best-effort: look for the same product on every other supported site.
     try:
-        match = find_cross_platform_match(scraped)
-        if match and match.get("price"):
-            twin_site = "flipkart" if scraped["site"] == "amazon" else "amazon"
+        matches = find_all_platform_matches(scraped)
+        for match in matches:
             twin = models.Product(
                 owner_id=user.id,
                 name=match["name"],
                 url=match["url"],
-                site=twin_site,
+                site=match["site"],
                 target_price=payload.target_price,
                 current_price=match["price"],
                 image_url=match.get("image_url"),
                 category=match.get("category"),
+                group_id=group_id,
+                is_primary=False,
             )
             db.add(twin)
             db.commit()
             db.refresh(twin)
             db.add(models.PriceHistory(product_id=twin.id, price=match["price"]))
-
-            product.matched_product_id = twin.id
-            twin.matched_product_id = product.id
             db.commit()
-            db.refresh(product)
+            created.append(twin)
     except Exception:
-        pass  # cross-platform match is a bonus feature, not critical
+        pass  # cross-platform matching is a bonus feature, not critical
 
-    return product
+    return created
 
 
 @app.get("/products/{product_id}", response_model=schemas.ProductDetail)
@@ -183,7 +246,6 @@ def refresh_product(product_id: int, db: Session = Depends(get_db), user: models
     )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
     try:
         scraped = scrape_product(product.url)
         product.current_price = scraped["price"]
@@ -192,12 +254,11 @@ def refresh_product(product_id: int, db: Session = Depends(get_db), user: models
         db.commit()
         db.refresh(product)
     except Exception:
-        pass  # if the live site is unreachable, just show the last known price
-
+        pass
     return product
 
 
-# ============ SETTINGS ROUTES ============
+# ============ SETTINGS ============
 
 @app.get("/settings", response_model=schemas.UserOut)
 def get_settings(user: models.User = Depends(get_current_user)):
@@ -210,14 +271,10 @@ def update_settings(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    if payload.name is not None:
-        user.name = payload.name
-    if payload.phone is not None:
-        user.phone = payload.phone
-    if payload.age is not None:
-        user.age = payload.age
-    if payload.profile_picture_url is not None:
-        user.profile_picture_url = payload.profile_picture_url
+    for field in ["name", "phone", "age", "gender", "profile_picture_url", "theme_preference"]:
+        value = getattr(payload, field)
+        if value is not None:
+            setattr(user, field, value)
     db.commit()
     db.refresh(user)
     return user
@@ -227,6 +284,4 @@ def update_settings(
 
 @app.on_event("startup")
 def on_startup():
-    # Starts the background scheduler that re-checks all tracked products
-    # every hour, for as long as this server keeps running.
     start_scheduler()

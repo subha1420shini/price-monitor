@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PriceWatch — E-commerce Price Monitor</title>
+<title>PriceLens — E-commerce Price Monitor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,141 +12,251 @@
 </head>
 <body data-theme="dark">
 
-<!-- ===== Navbar ===== -->
-<nav class="navbar">
-  <div class="brand"><span class="dot"></span> Price<span style="color:var(--accent)">Watch</span></div>
-
-  <div class="nav-links hidden" id="navLinks">
-    <button data-page="home" class="active">Home</button>
-    <button data-page="dashboard">Dashboard</button>
-    <button data-page="products">Products</button>
-    <button data-page="settings">Settings</button>
+<!-- ===== WELCOME SCREEN ===== -->
+<section id="welcomeScreen" class="welcome-screen">
+  <div class="welcome-content">
+    <div class="section-label">Smarter shopping starts here</div>
+    <h1 class="welcome-title">Price<span style="color:var(--accent)">Lens</span></h1>
+    <p class="welcome-quote">"The best time to buy is the moment the price is right — let PriceLens watch, so you don't have to."</p>
+    <div class="welcome-ctas">
+      <button class="btn btn-primary" id="welcomeLoginBtn">Login</button>
+      <button class="btn btn-ghost" id="welcomeRegisterBtn">Register</button>
+    </div>
   </div>
+</section>
 
-  <div class="nav-right">
-    <div class="theme-toggle" id="themeToggle" title="Toggle theme"><div class="knob">☾</div></div>
-    <div id="authStatus" class="auth-status"></div>
-  </div>
-</nav>
-
-<!-- ===== AUTH SCREEN ===== -->
-<section id="authScreen" class="auth-screen">
+<!-- ===== LOGIN SCREEN ===== -->
+<section id="loginScreen" class="auth-screen hidden">
   <div class="panel auth-card">
-    <h2 id="authTitle">Login</h2>
-    <input class="input" type="email" id="authEmail" placeholder="Email">
-    <input class="input" type="password" id="authPassword" placeholder="Password">
-    <button id="authSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:10px;">Login</button>
-    <p class="auth-switch"><span id="authSwitchText">Don't have an account?</span> <a href="#" id="authSwitchLink">Register</a></p>
-    <p id="authError" class="error-text"></p>
+    <h2>Login</h2>
+    <input class="input" type="email" id="loginEmail" placeholder="Email">
+    <div class="password-wrap">
+      <input class="input" type="password" id="loginPassword" placeholder="Password">
+      <span class="eye-icon" data-target="loginPassword">👁</span>
+    </div>
+    <p class="link-line"><a href="#" id="forgotPasswordLink">Forgot password?</a></p>
+    <button id="loginSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center;">Login</button>
+    <p class="auth-switch">Don't have an account? <a href="#" id="goToRegisterLink">Register</a></p>
+    <p id="loginError" class="error-text"></p>
   </div>
 </section>
 
-<!-- ===== HOME ===== -->
-<section class="view" id="view-home">
-  <div class="hero">
-    <div class="hero-inner">
-      <div>
-        <div class="section-label">Price intelligence, for you</div>
-        <h1>Know the moment<br>a price <em>drops</em>.</h1>
-        <p class="lead">PriceWatch tracks products across Amazon and Flipkart, compares them side by side, and emails you the instant one hits the price you're willing to pay.</p>
-        <div class="hero-ctas">
-          <button class="btn btn-primary" onclick="goToPage('dashboard')">Open dashboard →</button>
-          <button class="btn btn-ghost" onclick="goToPage('products')">Browse products</button>
+<!-- ===== REGISTER SCREEN ===== -->
+<section id="registerScreen" class="auth-screen hidden">
+  <div class="panel auth-card">
+    <h2>Register</h2>
+    <input class="input" type="email" id="registerEmail" placeholder="Email">
+    <div class="password-wrap">
+      <input class="input" type="password" id="registerPassword" placeholder="Password">
+      <span class="eye-icon" data-target="registerPassword">👁</span>
+    </div>
+    <p class="password-hint">At least 8 characters, with a letter, a number, and a symbol.</p>
+    <button id="registerSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center;">Create account</button>
+    <p class="auth-switch">Already have an account? <a href="#" id="goToLoginLink">Login</a></p>
+    <p id="registerError" class="error-text"></p>
+  </div>
+</section>
+
+<!-- ===== VERIFY EMAIL SCREEN ===== -->
+<section id="verifyScreen" class="auth-screen hidden">
+  <div class="panel auth-card">
+    <h2>Verify your email</h2>
+    <p class="sub" id="verifyEmailLabel">We sent a 6-digit code to your email.</p>
+    <input class="input" type="text" id="verifyCode" placeholder="Enter 6-digit code" maxlength="6">
+    <button id="verifySubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center;">Verify</button>
+    <p class="auth-switch"><a href="#" id="resendCodeLink">Resend code</a></p>
+    <p id="verifyError" class="error-text"></p>
+  </div>
+</section>
+
+<!-- ===== FORGOT PASSWORD SCREEN ===== -->
+<section id="forgotScreen" class="auth-screen hidden">
+  <div class="panel auth-card">
+    <h2>Forgot password</h2>
+    <input class="input" type="email" id="forgotEmail" placeholder="Your account email">
+    <button id="forgotSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center;">Send reset code</button>
+    <p class="auth-switch"><a href="#" id="backToLoginFromForgot">Back to login</a></p>
+    <p id="forgotError" class="error-text"></p>
+  </div>
+</section>
+
+<!-- ===== RESET PASSWORD SCREEN ===== -->
+<section id="resetScreen" class="auth-screen hidden">
+  <div class="panel auth-card">
+    <h2>Reset password</h2>
+    <input class="input" type="text" id="resetCode" placeholder="6-digit code from email" maxlength="6">
+    <div class="password-wrap">
+      <input class="input" type="password" id="resetNewPassword" placeholder="New password">
+      <span class="eye-icon" data-target="resetNewPassword">👁</span>
+    </div>
+    <p class="password-hint">At least 8 characters, with a letter, a number, and a symbol.</p>
+    <button id="resetSubmitBtn" class="btn btn-primary" style="width:100%; justify-content:center;">Reset password</button>
+    <p id="resetError" class="error-text"></p>
+  </div>
+</section>
+
+<!-- ===== APP (after login) ===== -->
+<div id="appShell" class="hidden">
+  <nav class="navbar">
+    <div class="brand"><span class="dot"></span> Price<span style="color:var(--accent)">Lens</span></div>
+    <div class="nav-links" id="navLinks">
+      <button data-page="home" class="active">Home</button>
+      <button data-page="dashboard">Dashboard</button>
+      <button data-page="products">Products</button>
+      <button data-page="settings">Settings</button>
+    </div>
+    <div class="nav-right">
+      <div class="theme-toggle" id="themeToggle" title="Toggle theme"><div class="knob">☾</div></div>
+      <div id="authStatus" class="auth-status"></div>
+    </div>
+  </nav>
+
+  <!-- HOME -->
+  <section class="view" id="view-home">
+    <div class="container page-pad">
+      <div class="section-label">Overview</div>
+      <h2 class="page-title">How PriceLens works</h2>
+      <p class="sub" style="max-width:600px; margin-bottom:24px;">A simple look at what happens behind the scenes when you track a product.</p>
+
+      <div class="panel" style="overflow-x:auto;">
+        <svg viewBox="0 0 900 220" width="100%" style="min-width:700px;">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M2 1L8 5L2 9" fill="none" stroke="#00D9A3" stroke-width="1.5"/>
+            </marker>
+          </defs>
+          <g font-family="Inter, sans-serif" font-size="13" fill="var(--text)">
+            <rect x="20" y="80" width="140" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+            <text x="90" y="115" text-anchor="middle">You paste a link</text>
+
+            <line x1="160" y1="110" x2="220" y2="110" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="220" y="80" width="140" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+            <text x="290" y="108" text-anchor="middle">We scrape price</text>
+            <text x="290" y="124" text-anchor="middle" font-size="11" fill="var(--text-muted)">across sites</text>
+
+            <line x1="360" y1="110" x2="420" y2="110" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="420" y="80" width="140" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+            <text x="490" y="108" text-anchor="middle">Compare &amp; store</text>
+            <text x="490" y="124" text-anchor="middle" font-size="11" fill="var(--text-muted)">price history</text>
+
+            <line x1="560" y1="110" x2="620" y2="110" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+            <rect x="620" y="80" width="140" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+            <text x="690" y="108" text-anchor="middle">Check hourly</text>
+            <text x="690" y="124" text-anchor="middle" font-size="11" fill="var(--text-muted)">against target</text>
+
+            <line x1="690" y1="140" x2="690" y2="170" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+            <rect x="620" y="170" width="140" height="40" rx="10" fill="var(--accent-dim)" stroke="var(--accent)"/>
+            <text x="690" y="195" text-anchor="middle" fill="var(--accent)">Email you the deal</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="container page-pad">
+      <div class="section-label">Overview</div>
+      <h2 class="page-title">Dashboard</h2>
+
+      <div class="panel" style="margin-bottom:22px;">
+        <h3>Track a new product</h3>
+        <p class="sub">Paste a link from Amazon, Flipkart, Meesho, Myntra or Purplle. We'll search the others automatically.</p>
+        <div class="filter-bar">
+          <input class="input" type="url" id="productUrl" placeholder="Paste a product URL">
+          <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
+          <button id="addProductBtn" class="btn btn-primary">Track</button>
         </div>
-        <div class="hero-stats" id="heroStats"></div>
+        <p id="addProductStatus" class="sub"></p>
       </div>
-      <div class="monitor-card">
-        <div class="monitor-head"><h3>Live tracked prices</h3><span class="live">LIVE</span></div>
-        <div id="monitorList"></div>
-      </div>
-    </div>
-  </div>
-</section>
 
-<!-- ===== DASHBOARD ===== -->
-<section class="view" id="view-dashboard">
-  <div class="container page-pad">
-    <div class="section-label">Overview</div>
-    <h2 class="page-title">Dashboard</h2>
+      <div class="grid kpi-grid" id="kpiGrid"></div>
 
-    <div class="panel" style="margin-bottom:22px;">
-      <h3>Track a new product</h3>
-      <p class="sub">Paste a product link from Amazon or Flipkart, set your target price.</p>
-      <div class="filter-bar">
-        <input class="input" type="url" id="productUrl" placeholder="Paste Amazon or Flipkart product URL">
-        <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
-        <button id="addProductBtn" class="btn btn-primary">Track</button>
-      </div>
-      <p id="addProductStatus" class="sub"></p>
-    </div>
-
-    <div class="grid kpi-grid" id="kpiGrid"></div>
-
-    <div class="panel" style="margin-top:20px;">
-      <h3>Recently tracked</h3>
-      <p class="sub">Click a product to see its price history.</p>
-      <div id="dashboardGrid" class="product-grid"></div>
-    </div>
-
-    <div class="panel chart-section hidden" id="chartSection" style="margin-top:20px;">
-      <h3 id="chartTitle">Price history</h3>
-      <div class="chart-box"><canvas id="priceChart"></canvas></div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== PRODUCTS ===== -->
-<section class="view" id="view-products">
-  <div class="container page-pad">
-    <div class="section-label">Catalog</div>
-    <h2 class="page-title">All products</h2>
-
-    <div class="filter-bar">
-      <input class="input" id="searchInput" placeholder="Search your tracked products...">
-    </div>
-    <div class="chip-row" id="categoryChips"></div>
-
-    <div id="productsGrid" class="product-grid"></div>
-  </div>
-</section>
-
-<!-- ===== SETTINGS ===== -->
-<section class="view" id="view-settings">
-  <div class="container page-pad">
-    <div class="section-label">Account</div>
-    <h2 class="page-title">Settings</h2>
-
-    <div class="panel" style="max-width:600px;">
-      <div class="profile-header">
-        <div class="profile-pic-wrap" id="profilePicWrap" onclick="document.getElementById('picFileInput').click()">
-          <span id="profileInitial">?</span>
-          <div class="pic-edit-overlay">Change</div>
+      <div class="dash-charts">
+        <div class="panel">
+          <h3>Category breakdown</h3>
+          <div class="chart-box" style="height:220px;"><canvas id="categoryPie"></canvas></div>
         </div>
-        <input type="file" id="picFileInput" accept="image/*" class="hidden">
-        <div>
-          <div class="profile-name" id="profileNameDisplay">Your name</div>
-          <div class="sub" id="profileEmailDisplay">—</div>
+        <div class="panel">
+          <h3 id="barChartTitle">Price by site</h3>
+          <p class="sub">Click a product below to compare its prices across sites.</p>
+          <div class="chart-box" style="height:220px;"><canvas id="siteBarChart"></canvas></div>
         </div>
       </div>
 
-      <h3 style="margin-top:20px;">Profile</h3>
-      <div class="settings-row"><label>Full name</label><input class="input" type="text" id="settingsName" placeholder="Your name"></div>
-      <div class="settings-row"><label>Phone number</label><input class="input" type="tel" id="settingsPhone" placeholder="e.g. 9876543210"></div>
-      <div class="settings-row"><label>Age</label><input class="input" type="number" id="settingsAge" placeholder="e.g. 21"></div>
-      <div class="settings-row"><label>Email</label><div class="settings-value" id="settingsEmail">—</div></div>
+      <div class="panel" style="margin-top:20px;">
+        <h3>Recently tracked</h3>
+        <div id="dashboardGrid" class="product-grid"></div>
+      </div>
 
-      <button id="saveSettingsBtn" class="btn btn-primary" style="margin-top:6px;">Save changes</button>
-      <p id="settingsStatus" class="sub"></p>
-
-      <div class="divider"></div>
-      <h3>Appearance</h3>
-      <p class="sub">Switch between dark and light mode using the toggle in the top-right corner.</p>
-
-      <div class="divider"></div>
-      <button id="logoutBtnSettings" class="btn btn-ghost" style="border-color:var(--danger); color:var(--danger);">Log out</button>
+      <div class="panel chart-section hidden" id="chartSection" style="margin-top:20px;">
+        <h3 id="chartTitle">Price history</h3>
+        <div class="chart-box"><canvas id="priceChart"></canvas></div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="view" id="view-products">
+    <div class="container page-pad">
+      <div class="section-label">Catalog</div>
+      <h2 class="page-title">All products</h2>
+      <div class="filter-bar"><input class="input" id="searchInput" placeholder="Search your tracked products..."></div>
+      <div class="chip-row" id="categoryChips"></div>
+      <div id="productsGrid" class="product-grid"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="container page-pad">
+      <div class="section-label">Account</div>
+      <h2 class="page-title">Settings</h2>
+
+      <div class="panel" style="max-width:600px;">
+        <div class="profile-header">
+          <div class="profile-pic-wrap" id="profilePicWrap" onclick="document.getElementById('picFileInput').click()">
+            <span id="profileInitial">?</span>
+            <div class="pic-edit-overlay">Change</div>
+          </div>
+          <input type="file" id="picFileInput" accept="image/*" class="hidden">
+          <div>
+            <div class="profile-name" id="profileNameDisplay">Your name</div>
+            <div class="sub" id="profileEmailDisplay">—</div>
+            <span class="verify-badge" id="verifyBadge"></span>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px;">Profile</h3>
+        <div class="settings-row"><label>Full name</label><input class="input" type="text" id="settingsName"></div>
+        <div class="settings-row"><label>Phone number</label><input class="input" type="tel" id="settingsPhone"></div>
+        <div class="settings-row"><label>Age</label><input class="input" type="number" id="settingsAge"></div>
+        <div class="settings-row">
+          <label>Gender</label>
+          <div class="radio-row">
+            <label><input type="radio" name="gender" value="male"> Male</label>
+            <label><input type="radio" name="gender" value="female"> Female</label>
+            <label><input type="radio" name="gender" value="other"> Other</label>
+          </div>
+        </div>
+        <div class="settings-row"><label>Email</label><div class="settings-value" id="settingsEmail">—</div></div>
+
+        <button id="saveSettingsBtn" class="btn btn-primary" style="margin-top:6px;">Save changes</button>
+        <p id="settingsStatus" class="sub"></p>
+
+        <div class="divider"></div>
+        <h3>Appearance</h3>
+        <p class="sub">Use the toggle in the top-right corner to switch dark/light mode.</p>
+
+        <div class="divider"></div>
+        <button id="logoutBtnSettings" class="btn btn-ghost" style="border-color:var(--danger); color:var(--danger);">Log out</button>
+      </div>
+    </div>
+  </section>
+</div>
 
 <script src="script.js"></script>
 </body>

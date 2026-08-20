@@ -1,6 +1,14 @@
-"""JWT auth: register -> hash password, login -> verify + issue token."""
+"""
+auth.py
+-------
+JWT authentication, password hashing, and OTP code generation for
+email verification / password reset.
+"""
+
 import os
+import random
 from datetime import datetime, timedelta
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -33,6 +41,11 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def generate_otp() -> str:
+    """6-digit numeric code used for both email verification and password reset."""
+    return f"{random.randint(0, 999999):06d}"
+
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> models.User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -51,14 +64,3 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
-    import re
-
-def validate_password_strength(password: str):
-    if len(password) < 8:
-        raise ValueError("Password must be at least 8 characters long")
-    if not re.search(r"[A-Za-z]", password):
-        raise ValueError("Password must include at least one letter")
-    if not re.search(r"[0-9]", password):
-        raise ValueError("Password must include at least one number")
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-+=]", password):
-        raise ValueError("Password must include at least one symbol")

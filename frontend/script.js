@@ -6,6 +6,10 @@ let allProducts = [];
 let activeCategory = "All";
 let currentPage = "home";
 let priceChart = null;
+let categoryPieChart = null;
+let siteBarChart = null;
+let pendingVerifyEmail = "";
+let pendingResetEmail = "";
 
 function safeGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
 function safeSet(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
@@ -21,76 +25,175 @@ applyTheme(safeGet("theme") || "dark");
 themeToggle.onclick = () => {
   const next = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
   applyTheme(next);
-  if (currentPage === "dashboard") drawChart();
+  if (currentPage === "dashboard") { drawChart(); drawCategoryPie(); }
 };
 
-// ================= AUTH =================
-let authMode = "login";
-const authScreen = document.getElementById("authScreen");
-const authStatus = document.getElementById("authStatus");
-const navLinks = document.getElementById("navLinks");
+// ================= EYE ICON TOGGLE =================
+document.querySelectorAll(".eye-icon").forEach((icon) => {
+  icon.onclick = () => {
+    const input = document.getElementById(icon.dataset.target);
+    if (input.type === "password") { input.type = "text"; icon.textContent = "🙈"; }
+    else { input.type = "password"; icon.textContent = "👁"; }
+  };
+});
 
+// ================= SCREEN SWITCHING =================
+const screens = ["welcomeScreen", "loginScreen", "registerScreen", "verifyScreen", "forgotScreen", "resetScreen"];
+function showScreen(id) {
+  screens.forEach(s => document.getElementById(s).classList.add("hidden"));
+  document.getElementById("appShell").classList.add("hidden");
+  document.getElementById(id).classList.remove("hidden");
+}
 function showApp() {
-  authScreen.classList.add("hidden");
-  navLinks.classList.remove("hidden");
-  authStatus.innerHTML = `Logged in <a id="logoutLink">Logout</a>`;
+  screens.forEach(s => document.getElementById(s).classList.add("hidden"));
+  document.getElementById("appShell").classList.remove("hidden");
+  document.getElementById("authStatus").innerHTML = `Logged in <a id="logoutLink">Logout</a>`;
   document.getElementById("logoutLink").onclick = logout;
   goToPage("home");
 }
+function logout() { token = null; safeSet("token", ""); showScreen("welcomeScreen"); }
 
-function showAuth() {
-  authScreen.classList.remove("hidden");
-  navLinks.classList.add("hidden");
-  authStatus.innerHTML = "";
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-}
+document.getElementById("welcomeLoginBtn").onclick = () => showScreen("loginScreen");
+document.getElementById("welcomeRegisterBtn").onclick = () => showScreen("registerScreen");
+document.getElementById("goToRegisterLink").onclick = (e) => { e.preventDefault(); showScreen("registerScreen"); };
+document.getElementById("goToLoginLink").onclick = (e) => { e.preventDefault(); showScreen("loginScreen"); };
+document.getElementById("forgotPasswordLink").onclick = (e) => { e.preventDefault(); showScreen("forgotScreen"); };
+document.getElementById("backToLoginFromForgot").onclick = (e) => { e.preventDefault(); showScreen("loginScreen"); };
 
-function logout() {
-  token = null;
-  safeSet("token", "");
-  showAuth();
-}
-
-document.getElementById("authSwitchLink").onclick = (e) => {
-  e.preventDefault();
-  authMode = authMode === "login" ? "register" : "login";
-  document.getElementById("authTitle").textContent = authMode === "login" ? "Login" : "Register";
-  document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "Login" : "Create account";
-  document.getElementById("authSwitchText").textContent = authMode === "login" ? "Don't have an account?" : "Already have an account?";
-  document.getElementById("authSwitchLink").textContent = authMode === "login" ? "Register" : "Login";
-};
-
-document.getElementById("authSubmitBtn").onclick = async () => {
-  const email = document.getElementById("authEmail").value.trim();
-  const password = document.getElementById("authPassword").value;
-  const errorEl = document.getElementById("authError");
+// ================= REGISTER =================
+document.getElementById("registerSubmitBtn").onclick = async () => {
+  const email = document.getElementById("registerEmail").value.trim();
+  const password = document.getElementById("registerPassword").value;
+  const errorEl = document.getElementById("registerError");
   errorEl.textContent = "";
   if (!email || !password) { errorEl.textContent = "Enter both email and password."; return; }
 
   try {
-    if (authMode === "register") {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) throw new Error((await res.json()).detail || "Registration failed");
-      authMode = "login";
-      document.getElementById("authTitle").textContent = "Login";
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const detail = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+      throw new Error(detail || "Registration failed");
     }
+    pendingVerifyEmail = email;
+    document.getElementById("verifyEmailLabel").textContent = `We sent a 6-digit code to ${email}`;
+    showScreen("verifyScreen");
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+};
+
+// ================= VERIFY EMAIL =================
+document.getElementById("verifySubmitBtn").onclick = async () => {
+  const code = document.getElementById("verifyCode").value.trim();
+  const errorEl = document.getElementById("verifyError");
+  errorEl.textContent = "";
+  try {
+    const res = await fetch(`${API_BASE}/auth/verify-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingVerifyEmail, code }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Verification failed");
+    token = data.access_token;
+    safeSet("token", token);
+    showApp();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+};
+
+document.getElementById("resendCodeLink").onclick = async (e) => {
+  e.preventDefault();
+  try {
+    await fetch(`${API_BASE}/auth/resend-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingVerifyEmail }),
+    });
+    document.getElementById("verifyError").textContent = "New code sent.";
+  } catch (err) {}
+};
+
+// ================= LOGIN =================
+document.getElementById("loginSubmitBtn").onclick = async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errorEl = document.getElementById("loginError");
+  errorEl.textContent = "";
+  if (!email || !password) { errorEl.textContent = "Enter both email and password."; return; }
+
+  try {
     const form = new URLSearchParams();
     form.append("username", email);
     form.append("password", password);
-    const loginRes = await fetch(`${API_BASE}/auth/login`, {
+    const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: form,
     });
-    if (!loginRes.ok) throw new Error((await loginRes.json()).detail || "Login failed");
-    const data = await loginRes.json();
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 403) {
+        pendingVerifyEmail = email;
+        document.getElementById("verifyEmailLabel").textContent = `We sent a 6-digit code to ${email}`;
+        showScreen("verifyScreen");
+        return;
+      }
+      throw new Error(data.detail || "Login failed");
+    }
     token = data.access_token;
     safeSet("token", token);
     showApp();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+};
+
+// ================= FORGOT / RESET PASSWORD =================
+document.getElementById("forgotSubmitBtn").onclick = async () => {
+  const email = document.getElementById("forgotEmail").value.trim();
+  const errorEl = document.getElementById("forgotError");
+  errorEl.textContent = "";
+  try {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not send reset code");
+    pendingResetEmail = email;
+    showScreen("resetScreen");
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+};
+
+document.getElementById("resetSubmitBtn").onclick = async () => {
+  const code = document.getElementById("resetCode").value.trim();
+  const newPassword = document.getElementById("resetNewPassword").value;
+  const errorEl = document.getElementById("resetError");
+  errorEl.textContent = "";
+  try {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingResetEmail, code, new_password: newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const detail = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
+      throw new Error(detail || "Reset failed");
+    }
+    errorEl.style.color = "var(--accent)";
+    errorEl.textContent = "Password reset! Please login.";
+    setTimeout(() => { errorEl.style.color = ""; showScreen("loginScreen"); }, 1500);
   } catch (err) {
     errorEl.textContent = err.message;
   }
@@ -107,12 +210,13 @@ function goToPage(pageName) {
   document.getElementById(`view-${pageName}`).classList.add("active");
   document.querySelectorAll(".nav-links button").forEach(b => b.classList.toggle("active", b.dataset.page === pageName));
 
-  if (pageName === "home") loadProducts();
   if (pageName === "dashboard") loadProducts();
   if (pageName === "products") loadProducts();
   if (pageName === "settings") loadSettings();
 }
 
+// ================= BOOT =================
+if (token) { showApp(); } else { showScreen("welcomeScreen"); }
 // ================= ADD PRODUCT =================
 document.getElementById("addProductBtn").onclick = async () => {
   const url = document.getElementById("productUrl").value.trim();
@@ -120,15 +224,16 @@ document.getElementById("addProductBtn").onclick = async () => {
   const statusEl = document.getElementById("addProductStatus");
   if (!url || !targetPrice) { statusEl.textContent = "Enter a product URL and target price."; return; }
 
-  statusEl.textContent = "Fetching price, checking the other platform too... this can take a few seconds.";
+  statusEl.textContent = "Fetching price, checking the other platforms too... this can take up to a minute.";
   try {
     const res = await fetch(`${API_BASE}/products`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({ url, target_price: targetPrice }),
     });
-    if (!res.ok) throw new Error((await res.json()).detail || "Could not add product");
-    statusEl.textContent = "Product added and being tracked.";
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Could not add product");
+    statusEl.textContent = `Tracking started — found on ${data.length} site(s).`;
     document.getElementById("productUrl").value = "";
     document.getElementById("targetPrice").value = "";
     loadProducts();
@@ -143,50 +248,53 @@ async function loadProducts() {
   if (!res.ok) return;
   allProducts = await res.json();
 
-  if (currentPage === "home") renderHome();
   if (currentPage === "dashboard") renderDashboard();
   if (currentPage === "products") renderProductsPage();
 }
 
 // ================= HELPERS =================
-function pairProducts(products) {
-  const seen = new Set();
-  const pairs = [];
-  products.forEach((p) => {
-    if (seen.has(p.id)) return;
-    const twin = products.find((x) => x.id === p.matched_product_id);
-    if (twin) { seen.add(p.id); seen.add(twin.id); }
-    pairs.push({ main: p, twin });
+function groupProducts(products) {
+  const groups = {};
+  products.forEach(p => {
+    const key = p.group_id || `single-${p.id}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
   });
-  return pairs;
+  return Object.values(groups).map(members => {
+    members.sort((a, b) => (a.is_primary === b.is_primary) ? 0 : a.is_primary ? -1 : 1);
+    return members;
+  });
 }
 
-function productCardHTML(pair) {
-  const { main: p, twin } = pair;
-  const cheaper = twin && twin.current_price < p.current_price ? twin : p;
-  const hitTarget = cheaper.current_price != null && cheaper.current_price <= cheaper.target_price;
+function cheapestInGroup(group) {
+  return group.reduce((min, p) => (p.current_price != null && (min.current_price == null || p.current_price < min.current_price)) ? p : min, group[0]);
+}
 
-  const imageHTML = p.image_url
-    ? `<img src="${p.image_url}" alt="${p.name}" onerror="this.parentElement.innerHTML='<span class=&quot;no-image&quot;>No image</span>'">`
+function productCardHTML(group) {
+  const main = group[0];
+  const cheapest = cheapestInGroup(group);
+  const hitTarget = cheapest.current_price != null && cheapest.current_price <= main.target_price;
+
+  const imageHTML = main.image_url
+    ? `<img src="${main.image_url}" alt="${main.name}" onerror="this.parentElement.innerHTML='<span class=&quot;no-image&quot;>No image</span>'">`
     : `<span class="no-image">No image</span>`;
+
+  const siteRows = group.map(p => `
+    <div class="site-row ${p.id === cheapest.id ? 'cheaper' : ''}" onclick="openFreshPrice(${p.id}, '${p.url.replace(/'/g, "\\'")}')">
+      <span class="site-label">${p.site} ↗</span>
+      <span class="price" id="price-${p.id}">${p.current_price != null ? '₹' + p.current_price.toLocaleString() : '—'}</span>
+    </div>
+  `).join("");
 
   return `
     <div class="product-card">
-      <div class="image-wrap" onclick="showChart(${p.id}, '${p.name.replace(/'/g, "\\'")}')">${imageHTML}</div>
+      <div class="image-wrap" onclick="showChart(${main.id}, '${main.name.replace(/'/g, "\\'")}')">${imageHTML}</div>
       <div class="card-body">
-        ${p.category ? `<span class="category-tag">${p.category}</span>` : ''}
-        <div class="name" onclick="showChart(${p.id}, '${p.name.replace(/'/g, "\\'")}')">${p.name}</div>
-        <div class="site-row ${cheaper === p || !twin ? 'cheaper' : ''}" style="cursor:pointer" onclick="openFreshPrice(${p.id}, '${p.url}')">
-          <span class="site-label">${p.site} ↗</span>
-          <span class="price" id="price-${p.id}">${p.current_price != null ? '₹' + p.current_price.toLocaleString() : '—'}</span>
-        </div>
-        ${twin ? `
-        <div class="site-row ${cheaper === twin ? 'cheaper' : ''}" style="cursor:pointer" onclick="openFreshPrice(${twin.id}, '${twin.url}')">
-          <span class="site-label">${twin.site} ↗</span>
-          <span class="price" id="price-${twin.id}">${twin.current_price != null ? '₹' + twin.current_price.toLocaleString() : '—'}</span>
-        </div>` : ''}
+        ${main.category ? `<span class="category-tag">${main.category}</span>` : ''}
+        <div class="name" onclick="showChart(${main.id}, '${main.name.replace(/'/g, "\\'")}')">${main.name}</div>
+        ${siteRows}
         <div class="target-row">
-          <span>Target: ₹${p.target_price.toLocaleString()}</span>
+          <span>Target: ₹${main.target_price.toLocaleString()}</span>
           ${hitTarget ? '<span class="badge lowest">Target hit!</span>' : ''}
         </div>
       </div>
@@ -194,61 +302,26 @@ function productCardHTML(pair) {
   `;
 }
 
-// Refreshes a single product's price right before opening its page,
-// so the number shown matches the live site as closely as possible.
 async function openFreshPrice(productId, url) {
   const priceEl = document.getElementById(`price-${productId}`);
   if (priceEl) priceEl.textContent = "…";
-
   try {
     const res = await fetch(`${API_BASE}/products/${productId}/refresh`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
+      method: "POST", headers: { "Authorization": `Bearer ${token}` },
     });
     if (res.ok) {
       const updated = await res.json();
-      if (priceEl && updated.current_price != null) {
-        priceEl.textContent = "₹" + updated.current_price.toLocaleString();
-      }
+      if (priceEl && updated.current_price != null) priceEl.textContent = "₹" + updated.current_price.toLocaleString();
     }
-  } catch (e) {
-    // if refresh fails, we still open the page with the last known price shown
-  }
-
+  } catch (e) {}
   window.open(url, "_blank", "noopener");
 }
-// ================= HOME PAGE =================
-function renderHome() {
-  const totalProducts = allProducts.length;
-  const targetsHit = allProducts.filter(p => p.current_price != null && p.current_price <= p.target_price).length;
-  const categories = new Set(allProducts.map(p => p.category).filter(Boolean));
 
-  document.getElementById("heroStats").innerHTML = `
-    <div class="hero-stat"><b class="mono">${totalProducts}</b><span>products tracked</span></div>
-    <div class="hero-stat"><b class="mono">${targetsHit}</b><span>targets hit</span></div>
-    <div class="hero-stat"><b class="mono">${categories.size}</b><span>categories</span></div>
-  `;
-
-  const monitorList = document.getElementById("monitorList");
-  if (allProducts.length === 0) {
-    monitorList.innerHTML = `<p class="sub">No products tracked yet. Go to Dashboard to add one.</p>`;
-  } else {
-    monitorList.innerHTML = allProducts.slice(0, 5).map(p => `
-      <div class="monitor-row">
-        <div class="name">${p.name.slice(0, 34)}${p.name.length > 34 ? '…' : ''}<small>${p.site}</small></div>
-        <div class="price">₹${p.current_price != null ? p.current_price.toLocaleString() : '—'}</div>
-      </div>
-    `).join("");
-  }
-}
-
-// ================= DASHBOARD PAGE =================
+// ================= DASHBOARD =================
 function renderDashboard() {
-  const pairs = pairProducts(allProducts);
-  const totalProducts = allProducts.length;
-  const targetsHit = allProducts.filter(p => p.current_price != null && p.current_price <= p.target_price).length;
-  const categories = new Set(allProducts.map(p => p.category).filter(Boolean));
-
+  const groups = groupProducts(allProducts);
+  const totalProducts = groups.length;
+  const targetsHit = groups.filter(g => { const c = cheapestInGroup(g); return c.current_price != null && c.current_price <= g[0].target_price; }).length;
   const totalCurrent = allProducts.reduce((sum, p) => sum + (p.current_price || 0), 0);
   const totalTarget = allProducts.reduce((sum, p) => sum + (p.target_price || 0), 0);
 
@@ -259,8 +332,47 @@ function renderDashboard() {
     <div class="kpi-card"><div class="value">₹${totalTarget.toLocaleString()}</div><div class="label">Total target price</div></div>
   `;
 
-  document.getElementById("dashboardGrid").innerHTML = pairs.slice(0, 6).map(productCardHTML).join("")
+  document.getElementById("dashboardGrid").innerHTML = groups.slice(0, 6).map(productCardHTML).join("")
     || `<p class="sub">No products yet — add one above.</p>`;
+
+  drawCategoryPie();
+  if (groups.length > 0) drawSiteBar(groups[0]);
+}
+
+function drawCategoryPie() {
+  const counts = {};
+  allProducts.forEach(p => { const c = p.category || "Other"; counts[c] = (counts[c] || 0) + 1; });
+  const labels = Object.keys(counts);
+  const values = Object.values(counts);
+  const colors = ["#00D9A3", "#4DA8FF", "#FFB020", "#FF5C6C", "#B57BFF", "#5CE1E6"];
+
+  if (categoryPieChart) categoryPieChart.destroy();
+  categoryPieChart = new Chart(document.getElementById("categoryPie"), {
+    type: "doughnut",
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { color: getComputedStyle(document.body).getPropertyValue("--text-muted") } } } },
+  });
+}
+
+function drawSiteBar(group) {
+  const labels = group.map(p => p.site);
+  const values = group.map(p => p.current_price || 0);
+  const style = getComputedStyle(document.body);
+  const muted = style.getPropertyValue("--text-muted").trim();
+  const grid = style.getPropertyValue("--border").trim();
+
+  document.getElementById("barChartTitle").textContent = `Price by site — ${group[0].name.slice(0, 30)}`;
+
+  if (siteBarChart) siteBarChart.destroy();
+  siteBarChart = new Chart(document.getElementById("siteBarChart"), {
+    type: "bar",
+    data: { labels, datasets: [{ label: "Price (₹)", data: values, backgroundColor: "#00D9A3" }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: muted }, grid: { display: false } }, y: { ticks: { color: muted }, grid: { color: grid } } },
+    },
+  });
 }
 
 // ================= PRODUCTS PAGE =================
@@ -274,14 +386,13 @@ function renderProductsPage() {
   let filtered = activeCategory === "All" ? allProducts : allProducts.filter(p => (p.category || "Other") === activeCategory);
   filtered = filtered.filter(p => p.name.toLowerCase().includes(query));
 
-  const pairs = pairProducts(filtered);
-  document.getElementById("productsGrid").innerHTML = pairs.map(productCardHTML).join("")
-    || `<p class="sub">No products match.</p>`;
+  const groups = groupProducts(filtered);
+  document.getElementById("productsGrid").innerHTML = groups.map(productCardHTML).join("") || `<p class="sub">No products match.</p>`;
 }
 function setCategory(cat) { activeCategory = cat; renderProductsPage(); }
 document.getElementById("searchInput").addEventListener("input", renderProductsPage);
 
-// ================= PRICE CHART =================
+// ================= PRICE HISTORY CHART =================
 let lastChartProduct = null;
 
 async function showChart(productId, name) {
@@ -289,6 +400,9 @@ async function showChart(productId, name) {
   if (!res.ok) return;
   const product = await res.json();
   lastChartProduct = { name, product };
+
+  const group = allProducts.filter(p => p.group_id === product.group_id);
+  if (group.length > 0) drawSiteBar(group);
 
   goToPage("dashboard");
   document.getElementById("chartSection").classList.remove("hidden");
@@ -311,17 +425,11 @@ function drawChart() {
   if (priceChart) priceChart.destroy();
   priceChart = new Chart(document.getElementById("priceChart"), {
     type: "line",
-    data: { labels, datasets: [{
-      label: "Price (₹)", data: prices, borderColor: accent,
-      backgroundColor: accent + "22", fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2,
-    }]},
+    data: { labels, datasets: [{ label: "Price (₹)", data: prices, borderColor: accent, backgroundColor: accent + "22", fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: muted }, grid: { display: false } },
-        y: { ticks: { color: muted, callback: v => '₹' + v }, grid: { color: grid } },
-      },
+      scales: { x: { ticks: { color: muted }, grid: { display: false } }, y: { ticks: { color: muted, callback: v => '₹' + v }, grid: { color: grid } } },
     },
   });
 }
@@ -339,13 +447,20 @@ async function loadSettings() {
   document.getElementById("profileEmailDisplay").textContent = data.email;
   document.getElementById("profileNameDisplay").textContent = data.name || "Your name";
 
+  if (data.gender) {
+    const radio = document.querySelector(`input[name="gender"][value="${data.gender}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  const badge = document.getElementById("verifyBadge");
+  badge.textContent = data.is_verified ? "Verified" : "Not verified";
+  badge.className = "verify-badge " + (data.is_verified ? "verified" : "unverified");
+
   const picWrap = document.getElementById("profilePicWrap");
   const initial = (data.name || data.email)[0].toUpperCase();
-  if (data.profile_picture_url) {
-    picWrap.innerHTML = `<img src="${data.profile_picture_url}" alt="Profile"><div class="pic-edit-overlay">Change</div>`;
-  } else {
-    picWrap.innerHTML = `<span id="profileInitial">${initial}</span><div class="pic-edit-overlay">Change</div>`;
-  }
+  picWrap.innerHTML = data.profile_picture_url
+    ? `<img src="${data.profile_picture_url}" alt="Profile"><div class="pic-edit-overlay">Change</div>`
+    : `<span>${initial}</span><div class="pic-edit-overlay">Change</div>`;
   picWrap.onclick = () => document.getElementById("picFileInput").click();
 }
 
@@ -353,12 +468,17 @@ document.getElementById("saveSettingsBtn").onclick = async () => {
   const name = document.getElementById("settingsName").value.trim();
   const phone = document.getElementById("settingsPhone").value.trim();
   const ageVal = document.getElementById("settingsAge").value;
+  const genderEl = document.querySelector('input[name="gender"]:checked');
   const statusEl = document.getElementById("settingsStatus");
   try {
     const res = await fetch(`${API_BASE}/settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-      body: JSON.stringify({ name: name || null, phone: phone || null, age: ageVal ? parseInt(ageVal) : null }),
+      body: JSON.stringify({
+        name: name || null, phone: phone || null,
+        age: ageVal ? parseInt(ageVal) : null,
+        gender: genderEl ? genderEl.value : null,
+      }),
     });
     if (!res.ok) throw new Error("Could not save settings");
     statusEl.textContent = "Settings saved.";
@@ -368,20 +488,17 @@ document.getElementById("saveSettingsBtn").onclick = async () => {
   }
 };
 
-// Profile picture: read the chosen file, convert to a data URL, save it as profile_picture_url
 document.getElementById("picFileInput").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const statusEl = document.getElementById("settingsStatus");
-
   const reader = new FileReader();
   reader.onload = async () => {
-    const dataUrl = reader.result;
     try {
       const res = await fetch(`${API_BASE}/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ profile_picture_url: dataUrl }),
+        body: JSON.stringify({ profile_picture_url: reader.result }),
       });
       if (!res.ok) throw new Error("Could not save photo");
       statusEl.textContent = "Profile photo updated.";
@@ -394,10 +511,3 @@ document.getElementById("picFileInput").addEventListener("change", async (e) => 
 });
 
 document.getElementById("logoutBtnSettings").onclick = logout;
-
-// ================= BOOT =================
-if (token) {
-  showApp();
-} else {
-  showAuth();
-}
