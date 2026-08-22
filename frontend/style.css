@@ -159,3 +159,4 @@ h1,h2,h3,h4{font-family:'Space Grotesk',sans-serif; letter-spacing:-0.01em;}
   .dash-charts{ grid-template-columns:1fr; }
   .nav-links{ display:none; }
 }
+.remove-btn{ width:100%; margin-top:10px; font-size:12.5px; padding:8px; }

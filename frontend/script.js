@@ -1,5 +1,6 @@
 // Point this at wherever your FastAPI backend is running.
-const API_BASE = "https://pricemonitor-backend.onrender.com";
+// IMPORTANT: update this to your NEW backend's URL once you deploy it.
+const API_BASE = "https://pricelens-backend.onrender.com";
 
 let token = safeGet("token");
 let allProducts = [];
@@ -25,7 +26,7 @@ applyTheme(safeGet("theme") || "dark");
 themeToggle.onclick = () => {
   const next = document.body.getAttribute("data-theme") === "dark" ? "light" : "dark";
   applyTheme(next);
-  if (currentPage === "dashboard") { drawChart(); drawCategoryPie(); }
+  if (currentPage === "dashboard") { drawChart(); drawCategoryPie(); if (siteBarChart) drawSiteBar(lastGroup); }
 };
 
 // ================= EYE ICON TOGGLE =================
@@ -215,8 +216,6 @@ function goToPage(pageName) {
   if (pageName === "settings") loadSettings();
 }
 
-// ================= BOOT =================
-if (token) { showApp(); } else { showScreen("welcomeScreen"); }
 // ================= ADD PRODUCT =================
 document.getElementById("addProductBtn").onclick = async () => {
   const url = document.getElementById("productUrl").value.trim();
@@ -280,26 +279,37 @@ function productCardHTML(group) {
     : `<span class="no-image">No image</span>`;
 
   const siteRows = group.map(p => `
-    <div class="site-row ${p.id === cheapest.id ? 'cheaper' : ''}" onclick="openFreshPrice(${p.id}, '${p.url.replace(/'/g, "\\'")}')">
+    <div class="site-row ${p.id === cheapest.id ? 'cheaper' : ''}" onclick="event.stopPropagation(); openFreshPrice(${p.id}, '${p.url.replace(/'/g, "\\'")}')">
       <span class="site-label">${p.site} ↗</span>
       <span class="price" id="price-${p.id}">${p.current_price != null ? '₹' + p.current_price.toLocaleString() : '—'}</span>
     </div>
   `).join("");
 
   return `
-    <div class="product-card">
-      <div class="image-wrap" onclick="showChart(${main.id}, '${main.name.replace(/'/g, "\\'")}')">${imageHTML}</div>
+    <div class="product-card" onclick="loadGroupCharts('${main.group_id}', '${main.name.replace(/'/g, "\\'")}')">
+      <div class="image-wrap">${imageHTML}</div>
       <div class="card-body">
         ${main.category ? `<span class="category-tag">${main.category}</span>` : ''}
-        <div class="name" onclick="showChart(${main.id}, '${main.name.replace(/'/g, "\\'")}')">${main.name}</div>
+        <div class="name">${main.name}</div>
         ${siteRows}
         <div class="target-row">
           <span>Target: ₹${main.target_price.toLocaleString()}</span>
           ${hitTarget ? '<span class="badge lowest">Target hit!</span>' : ''}
         </div>
+        <button class="btn btn-ghost remove-btn" onclick="event.stopPropagation(); removeProduct(${main.id})">Remove</button>
       </div>
     </div>
   `;
+}
+
+async function removeProduct(productId) {
+  if (!confirm("Remove this product from tracking?")) return;
+  try {
+    await fetch(`${API_BASE}/products/${productId}`, {
+      method: "DELETE", headers: { "Authorization": `Bearer ${token}` },
+    });
+    loadProducts();
+  } catch (err) {}
 }
 
 async function openFreshPrice(productId, url) {
@@ -332,11 +342,29 @@ function renderDashboard() {
     <div class="kpi-card"><div class="value">₹${totalTarget.toLocaleString()}</div><div class="label">Total target price</div></div>
   `;
 
-  document.getElementById("dashboardGrid").innerHTML = groups.slice(0, 6).map(productCardHTML).join("")
-    || `<p class="sub">No products yet — add one above.</p>`;
+  document.getElementById("dashboardGrid").innerHTML = groups.map(productCardHTML).join("")
+    || `<p class="sub">No products yet — add one in the Products page.</p>`;
 
   drawCategoryPie();
-  if (groups.length > 0) drawSiteBar(groups[0]);
+}
+
+// Called when a product card is clicked: shows the bar chart (price by
+// site for that product's group), the category pie chart, and the price
+// history line chart, all on the Dashboard page.
+let lastGroup = [];
+
+async function loadGroupCharts(groupId, name) {
+  const group = allProducts.filter(p => p.group_id === groupId);
+  if (group.length === 0) return;
+  lastGroup = group;
+
+  goToPage("dashboard");
+  document.getElementById("chartsWrap").classList.remove("hidden");
+  drawSiteBar(group);
+  drawCategoryPie();
+
+  const main = group.find(p => p.is_primary) || group[0];
+  await showChart(main.id, name);
 }
 
 function drawCategoryPie() {
@@ -344,10 +372,12 @@ function drawCategoryPie() {
   allProducts.forEach(p => { const c = p.category || "Other"; counts[c] = (counts[c] || 0) + 1; });
   const labels = Object.keys(counts);
   const values = Object.values(counts);
-  const colors = ["#00D9A3", "#4DA8FF", "#FFB020", "#FF5C6C", "#B57BFF", "#5CE1E6"];
+  const colors = ["#00D9A3", "#4DA8FF", "#FFB020", "#FF5C6C", "#B57BFF", "#5CE1E6", "#F97316", "#A3E635", "#FB7185", "#38BDF8"];
 
   if (categoryPieChart) categoryPieChart.destroy();
-  categoryPieChart = new Chart(document.getElementById("categoryPie"), {
+  const el = document.getElementById("categoryPie");
+  if (!el) return;
+  categoryPieChart = new Chart(el, {
     type: "doughnut",
     data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { color: getComputedStyle(document.body).getPropertyValue("--text-muted") } } } },
@@ -361,10 +391,13 @@ function drawSiteBar(group) {
   const muted = style.getPropertyValue("--text-muted").trim();
   const grid = style.getPropertyValue("--border").trim();
 
-  document.getElementById("barChartTitle").textContent = `Price by site — ${group[0].name.slice(0, 30)}`;
+  const titleEl = document.getElementById("barChartTitle");
+  if (titleEl) titleEl.textContent = `Price by site — ${group[0].name.slice(0, 30)}`;
 
   if (siteBarChart) siteBarChart.destroy();
-  siteBarChart = new Chart(document.getElementById("siteBarChart"), {
+  const el = document.getElementById("siteBarChart");
+  if (!el) return;
+  siteBarChart = new Chart(el, {
     type: "bar",
     data: { labels, datasets: [{ label: "Price (₹)", data: values, backgroundColor: "#00D9A3" }] },
     options: {
@@ -401,10 +434,6 @@ async function showChart(productId, name) {
   const product = await res.json();
   lastChartProduct = { name, product };
 
-  const group = allProducts.filter(p => p.group_id === product.group_id);
-  if (group.length > 0) drawSiteBar(group);
-
-  goToPage("dashboard");
   document.getElementById("chartSection").classList.remove("hidden");
   document.getElementById("chartTitle").textContent = `Price history — ${name}`;
   drawChart();
@@ -511,3 +540,6 @@ document.getElementById("picFileInput").addEventListener("change", async (e) => 
 });
 
 document.getElementById("logoutBtnSettings").onclick = logout;
+
+// ================= BOOT =================
+if (token) { showApp(); } else { showScreen("welcomeScreen"); }

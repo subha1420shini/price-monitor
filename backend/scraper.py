@@ -41,19 +41,24 @@ SEARCH_URLS = {
     "myntra": "https://www.myntra.com/{q}",
     "purplle": "https://www.purplle.com/search?q={q}",
 }
-
 CATEGORY_KEYWORDS = {
     "Electronics": ["phone", "mobile", "laptop", "earphone", "earbud", "headphone",
                     "speaker", "smartwatch", "watch", "tablet", "camera", "tv",
                     "television", "charger", "power bank", "airdopes", "buds"],
-    "Fashion": ["shirt", "tshirt", "t-shirt", "jeans", "shoes", "sneakers", "dress",
-                "jacket", "kurta", "saree", "footwear", "sandals", "bag", "wallet"],
-    "Home & Kitchen": ["mixer", "grinder", "cookware", "kettle", "chair", "table",
-                       "mattress", "pillow", "curtain", "lamp", "vacuum", "fan"],
+    "Home Appliances": ["refrigerator", "washing machine", "microwave", "air conditioner",
+                        "ac ", "geyser", "iron", "vacuum", "fan", "cooler", "purifier"],
+    "Kitchen Appliances": ["mixer", "grinder", "cookware", "kettle", "toaster",
+                           "induction", "pressure cooker", "blender", "oven", "kadai", "pan"],
+    "Furniture": ["chair", "table", "mattress", "pillow", "sofa", "bed", "shelf", "wardrobe"],
+    "Clothing": ["shirt", "tshirt", "t-shirt", "jeans", "dress", "jacket", "kurta",
+                 "saree", "trouser", "top", "hoodie", "ethnic", "co-ord"],
+    "Footwear": ["shoes", "sneakers", "sandals", "slippers", "footwear", "heels", "boots"],
     "Beauty & Personal Care": ["shampoo", "trimmer", "perfume", "makeup", "lotion",
-                               "cream", "razor", "hair dryer", "lipstick", "serum"],
-    "Appliances": ["refrigerator", "washing machine", "microwave", "air conditioner",
-                   "ac ", "geyser", "iron"],
+                               "cream", "razor", "lipstick", "serum", "sunscreen", "kajal"],
+    "Hair Accessories": ["hair dryer", "hair straightener", "curler", "hair oil",
+                         "hairband", "hair clip", "comb"],
+    "Bags & Accessories": ["bag", "wallet", "backpack", "handbag", "belt", "sunglasses", "jewellery"],
+    "Home & Decor": ["curtain", "lamp", "rug", "wall art", "vase", "wooden", "woodware"],
 }
 
 

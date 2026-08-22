@@ -138,40 +138,30 @@
     </div>
   </section>
 
-  <!-- DASHBOARD -->
+    <!-- DASHBOARD -->
   <section class="view" id="view-dashboard">
     <div class="container page-pad">
       <div class="section-label">Overview</div>
       <h2 class="page-title">Dashboard</h2>
-
-      <div class="panel" style="margin-bottom:22px;">
-        <h3>Track a new product</h3>
-        <p class="sub">Paste a link from Amazon, Flipkart, Meesho, Myntra or Purplle. We'll search the others automatically.</p>
-        <div class="filter-bar">
-          <input class="input" type="url" id="productUrl" placeholder="Paste a product URL">
-          <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
-          <button id="addProductBtn" class="btn btn-primary">Track</button>
-        </div>
-        <p id="addProductStatus" class="sub"></p>
-      </div>
+      <p class="sub">Click any product below to see its price comparison, category share, and price history.</p>
 
       <div class="grid kpi-grid" id="kpiGrid"></div>
 
-      <div class="dash-charts">
-        <div class="panel">
-          <h3>Category breakdown</h3>
-          <div class="chart-box" style="height:220px;"><canvas id="categoryPie"></canvas></div>
-        </div>
-        <div class="panel">
-          <h3 id="barChartTitle">Price by site</h3>
-          <p class="sub">Click a product below to compare its prices across sites.</p>
-          <div class="chart-box" style="height:220px;"><canvas id="siteBarChart"></canvas></div>
-        </div>
+      <div class="panel" style="margin-top:20px;">
+        <h3>All tracked products</h3>
+        <p class="sub">Click a card to load its charts below.</p>
+        <div id="dashboardGrid" class="product-grid"></div>
       </div>
 
-      <div class="panel" style="margin-top:20px;">
-        <h3>Recently tracked</h3>
-        <div id="dashboardGrid" class="product-grid"></div>
+      <div class="dash-charts hidden" id="chartsWrap" style="margin-top:20px;">
+        <div class="panel">
+          <h3 id="barChartTitle">Price by site</h3>
+          <div class="chart-box" style="height:240px;"><canvas id="siteBarChart"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Category breakdown</h3>
+          <div class="chart-box" style="height:240px;"><canvas id="categoryPie"></canvas></div>
+        </div>
       </div>
 
       <div class="panel chart-section hidden" id="chartSection" style="margin-top:20px;">
@@ -185,13 +175,24 @@
   <section class="view" id="view-products">
     <div class="container page-pad">
       <div class="section-label">Catalog</div>
-      <h2 class="page-title">All products</h2>
+      <h2 class="page-title">Products</h2>
+
+      <div class="panel" style="margin-bottom:22px;">
+        <h3>Track a new product</h3>
+        <p class="sub">Paste a link from Amazon, Flipkart, Meesho, Myntra or Purplle. We'll search the others automatically.</p>
+        <div class="filter-bar">
+          <input class="input" type="url" id="productUrl" placeholder="Paste a product URL">
+          <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
+          <button id="addProductBtn" class="btn btn-primary">Track</button>
+        </div>
+        <p id="addProductStatus" class="sub"></p>
+      </div>
+
       <div class="filter-bar"><input class="input" id="searchInput" placeholder="Search your tracked products..."></div>
       <div class="chip-row" id="categoryChips"></div>
       <div id="productsGrid" class="product-grid"></div>
     </div>
   </section>
-
   <!-- SETTINGS -->
   <section class="view" id="view-settings">
     <div class="container page-pad">
