@@ -7,10 +7,15 @@ and password-reset codes. Uses Gmail SMTP with an App Password.
 
 import os
 import smtplib
+import socket
 import logging
 from email.mime.text import MIMEText
 
 logger = logging.getLogger("alerts")
+_original_getaddrinfo = socket.getaddrinfo
+def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _original_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = _ipv4_only_getaddrinfo
 
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
