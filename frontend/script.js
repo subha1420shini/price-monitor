@@ -1,6 +1,6 @@
 // Point this at wherever your FastAPI backend is running.
-// IMPORTANT: update this to your NEW backend's URL once you deploy it.
-const API_BASE = "https://pricelens-backend.onrender.com";
+// IMPORTANT: update this to your NEW backend's URL once you deploy io.
+const API_BASE = "https://pricelens-backend-0ipu.onrender.com";
 
 let token = safeGet("token");
 let allProducts = [];
