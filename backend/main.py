@@ -44,20 +44,16 @@ def register(payload: schemas.UserCreate, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="An account with this email already exists")
 
-    code = generate_otp()
+    # OTP verification temporarily disabled - accounts are auto-verified.
     user = models.User(
         email=email,
         hashed_password=hash_password(payload.password),
-        is_verified=False,
-        verification_code=code,
-        verification_code_expiry=datetime.utcnow() + timedelta(minutes=10),
+        is_verified=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    send_verification_email(email, code)
     return user
-
 
 @app.post("/auth/verify-email", response_model=schemas.Token)
 def verify_email(payload: schemas.VerifyEmailRequest, db: Session = Depends(get_db)):

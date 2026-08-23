@@ -80,14 +80,24 @@ document.getElementById("registerSubmitBtn").onclick = async () => {
       const detail = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
       throw new Error(detail || "Registration failed");
     }
-    pendingVerifyEmail = email;
-    document.getElementById("verifyEmailLabel").textContent = `We sent a 6-digit code to ${email}`;
-    showScreen("verifyScreen");
+    // OTP temporarily disabled - log the user straight in after registering.
+    const form = new URLSearchParams();
+    form.append("username", email);
+    form.append("password", password);
+    const loginRes = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    });
+    const loginData = await loginRes.json();
+    if (!loginRes.ok) throw new Error(loginData.detail || "Login after registration failed");
+    token = loginData.access_token;
+    safeSet("token", token);
+    showApp();
   } catch (err) {
     errorEl.textContent = err.message;
   }
 };
-
 // ================= VERIFY EMAIL =================
 document.getElementById("verifySubmitBtn").onclick = async () => {
   const code = document.getElementById("verifyCode").value.trim();
