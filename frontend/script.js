@@ -46,12 +46,78 @@ function showScreen(id) {
   document.getElementById(id).classList.remove("hidden");
 }
 function showApp() {
-  screens.forEach(s => document.getElementById(s).classList.add("hidden"));
+  screens.forEach(s => {
+    document.getElementById(s).classList.add("hidden");
+  });
+
   document.getElementById("appShell").classList.remove("hidden");
-  document.getElementById("authStatus").innerHTML = `Logged in <a id="logoutLink">Logout</a>`;
+
+  document.getElementById("authStatus").innerHTML =
+    `Logged in <a id="logoutLink">Logout</a>`;
+
   document.getElementById("logoutLink").onclick = logout;
-  goToPage("home");
+
+  // Show the beautiful welcome/intro page first
+  showWelcomeAfterLogin();
 }
+
+
+function showWelcomeAfterLogin() {
+  const appShell = document.getElementById("appShell");
+
+  // Temporarily hide normal application content
+  appShell.classList.add("post-login-welcome");
+
+  document.querySelectorAll(".view").forEach(v => {
+    v.classList.remove("active");
+  });
+
+  // Create welcome overlay
+  let welcome = document.getElementById("afterLoginWelcome");
+
+  if (!welcome) {
+    welcome = document.createElement("div");
+    welcome.id = "afterLoginWelcome";
+
+    welcome.innerHTML = `
+      <div class="after-login-card">
+
+        <div class="after-login-icon">✦</div>
+
+        <p class="eyebrow">WELCOME TO PRICELENS</p>
+
+        <h1>
+          You're all set!
+        </h1>
+
+        <p>
+          Your PriceLens account is ready.
+          Start tracking products and discover better prices.
+        </p>
+
+        <button id="continueToHomeBtn" class="primary-btn">
+          Continue to PriceLens →
+        </button>
+
+      </div>
+    `;
+
+    appShell.appendChild(welcome);
+
+    document
+      .getElementById("continueToHomeBtn")
+      .onclick = () => {
+
+        welcome.remove();
+
+        appShell.classList.remove("post-login-welcome");
+
+        goToPage("home");
+      };
+  }
+}
+
+
 function logout() { token = null; safeSet("token", ""); showScreen("welcomeScreen"); }
 
 document.getElementById("welcomeLoginBtn").onclick = () => showScreen("loginScreen");
