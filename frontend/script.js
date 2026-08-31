@@ -222,7 +222,7 @@ function goToPage(pageName) {
   document.querySelectorAll(".nav-links button").forEach(b => b.classList.toggle("active", b.dataset.page === pageName));
 
   if (pageName === "dashboard") loadProducts();
-  if (pageName === "products") loadProducts();
+  if (pageName === "productlist") loadProducts();
   if (pageName === "settings") loadSettings();
 }
 
@@ -233,7 +233,7 @@ document.getElementById("addProductBtn").onclick = async () => {
   const statusEl = document.getElementById("addProductStatus");
   if (!url || !targetPrice) { statusEl.textContent = "Enter a product URL and target price."; return; }
 
-  statusEl.textContent = "Fetching price, checking the other platforms too... this can take up to a minute.";
+  statusEl.textContent = "Checking availability across sites... this can take up to a minute.";
   try {
     const res = await fetch(`${API_BASE}/products`, {
       method: "POST",
@@ -242,15 +242,16 @@ document.getElementById("addProductBtn").onclick = async () => {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "Could not add product");
-    statusEl.textContent = `Tracking started — found on ${data.length} site(s).`;
+    statusEl.textContent = `Available and now tracking — found on ${data.length} site(s).`;
     document.getElementById("productUrl").value = "";
     document.getElementById("targetPrice").value = "";
-    loadProducts();
+    allProducts = allProducts.concat(data);
+    const groups = groupProducts(data);
+    document.getElementById("justAddedGrid").innerHTML = groups.map(productCardHTML).join("");
   } catch (err) {
     statusEl.textContent = err.message;
   }
 };
-
 // ================= LOAD PRODUCTS =================
 async function loadProducts() {
   const res = await fetch(`${API_BASE}/products`, { headers: { "Authorization": `Bearer ${token}` } });
@@ -356,8 +357,9 @@ function renderDashboard() {
     || `<p class="sub">No products yet — add one in the Products page.</p>`;
 
   drawCategoryPie();
-}
+  document.getElementById("productsGrid").innerHTML = groups.map(productCardHTML).join("") || `<p class="sub">No products match.</p>`;
 
+}
 // Called when a product card is clicked: shows the bar chart (price by
 // site for that product's group), the category pie chart, and the price
 // history line chart, all on the Dashboard page.

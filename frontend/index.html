@@ -101,8 +101,9 @@
     <div class="brand"><span class="dot"></span> Price<span style="color:var(--accent)">Lens</span></div>
     <div class="nav-links" id="navLinks">
       <button data-page="home" class="active">Home</button>
-      <button data-page="dashboard">Dashboard</button>
-      <button data-page="products">Products</button>
+      <button data-page="addproduct">Add Product</button>
+      <button data-page="productlist">Product List</button>
+      <button data-page="dashboard">Dashboard</button>  
       <button data-page="settings">Settings</button>
     </div>
     <div class="nav-right">
@@ -112,32 +113,45 @@
   </nav>
 
   <!-- HOME -->
-  <section class="view" id="view-home">
-    <div class="container page-pad">
-      <div class="section-label">Overview</div>
-      <h2 class="page-title">How PriceLens works</h2>
-      <p class="sub" style="max-width:600px; margin-bottom:24px;">A simple look at what happens behind the scenes when you track a product.</p>
-
-      <div class="panel" style="overflow-x:auto;">
-       <!-- HOME -->
 <section class="view" id="view-home">
   <div class="container page-pad">
     <div class="section-label">Overview</div>
-    <h2 class="page-title">How PriceLens works</h2>
-    <p class="sub" style="max-width:600px; margin-bottom:24px;">A simple look at what happens when you track a product.</p>
+    <h2 class="page-title">What PriceLens does</h2>
+    <p class="sub" style="max-width:640px; margin-bottom:24px;">
+      PriceLens tracks a product across Amazon, Flipkart, Meesho, Myntra and
+      Purplle at the same time, and emails you instantly when any of them
+      hits the price you're willing to pay.
+    </p>
+    <div class="panel" style="overflow-x:auto;">
+      <svg viewBox="0 0 900 200" width="100%" style="min-width:680px;">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#00D9A3" stroke-width="1.5"/>
+          </marker>
+        </defs>
+        <g font-family="Inter, sans-serif" font-size="13" fill="var(--text)">
+          <rect x="20" y="70" width="150" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+          <text x="95" y="105" text-anchor="middle">You add a URL</text>
+          <line x1="170" y1="100" x2="230" y2="100" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
 
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
-      <div class="panel"><h3>1. Paste a link</h3><p class="sub">Copy a product URL from Amazon, Flipkart, Meesho, Myntra or Purplle and paste it in the Dashboard.</p></div>
-      <div class="panel"><h3>2. We scan every site</h3><p class="sub">PriceLens searches the other platforms for the same product and pulls in their prices too.</p></div>
-      <div class="panel"><h3>3. Set your target price</h3><p class="sub">Tell us the price you're willing to pay — we track every listing against it.</p></div>
-      <div class="panel"><h3>4. Get notified</h3><p class="sub">The moment any listing hits your target, we email you a link straight to that page.</p></div>
+          <rect x="230" y="70" width="160" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+          <text x="310" y="98" text-anchor="middle">We scan 5 sites</text>
+          <text x="310" y="115" text-anchor="middle" font-size="11" fill="var(--text-muted)">by product name</text>
+          <line x1="390" y1="100" x2="450" y2="100" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <rect x="450" y="70" width="160" height="60" rx="10" fill="var(--panel-alt)" stroke="var(--border)"/>
+          <text x="530" y="98" text-anchor="middle">Compare &amp; store</text>
+          <text x="530" y="115" text-anchor="middle" font-size="11" fill="var(--text-muted)">price history hourly</text>
+          <line x1="610" y1="100" x2="670" y2="100" stroke="#00D9A3" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+          <rect x="670" y="70" width="160" height="60" rx="10" fill="var(--accent-dim)" stroke="var(--accent)"/>
+          <text x="750" y="98" text-anchor="middle" fill="var(--accent)">Target hit?</text>
+          <text x="750" y="115" text-anchor="middle" font-size="11" fill="var(--accent)">Email sent instantly</text>
+        </g>
+      </svg>
     </div>
   </div>
 </section>
-      </div>
-    </div>
-  </section>
-
     <!-- DASHBOARD -->
   <section class="view" id="view-dashboard">
     <div class="container page-pad">
@@ -171,29 +185,38 @@
     </div>
   </section>
 
-  <!-- PRODUCTS -->
-  <section class="view" id="view-products">
-    <div class="container page-pad">
-      <div class="section-label">Catalog</div>
-      <h2 class="page-title">Products</h2>
-
-      <div class="panel" style="margin-bottom:22px;">
-        <h3>Track a new product</h3>
-        <p class="sub">Paste a link from Amazon, Flipkart, Meesho, Myntra or Purplle. We'll search the others automatically.</p>
-        <div class="filter-bar">
-          <input class="input" type="url" id="productUrl" placeholder="Paste a product URL">
-          <input class="input" style="max-width:160px;" type="number" id="targetPrice" placeholder="Target ₹">
-          <button id="addProductBtn" class="btn btn-primary">Track</button>
-        </div>
-        <p id="addProductStatus" class="sub"></p>
-      </div>
-
-      <div class="filter-bar"><input class="input" id="searchInput" placeholder="Search your tracked products..."></div>
-      <div class="chip-row" id="categoryChips"></div>
-      <div id="productsGrid" class="product-grid"></div>
+  <!-- ADD PRODUCT -->
+<section class="view" id="view-addproduct">
+  <div class="container page-pad">
+    <div class="section-label">Track something new</div>
+    <h2 class="page-title">Add a product</h2>
+    <div class="panel" style="max-width:640px;">
+      <h3>Paste a product link</h3>
+      <p class="sub">From Amazon, Flipkart, Meesho, Myntra or Purplle. We'll check the other four automatically.</p>
+      <div class="settings-row"><label>Product URL</label><input class="input" type="url" id="productUrl"></div>
+      <div class="settings-row"><label>Target price (₹)</label><input class="input" type="number" id="targetPrice"></div>
+      <button id="addProductBtn" class="btn btn-primary">Check availability &amp; track</button>
+      <p id="addProductStatus" class="sub" style="margin-top:10px;"></p>
     </div>
-  </section>
-  <!-- SETTINGS -->
+
+    <div class="panel" style="margin-top:22px;">
+      <h3>Just added</h3>
+      <div id="justAddedGrid" class="product-grid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT LIST -->
+<section class="view" id="view-productlist">
+  <div class="container page-pad">
+    <div class="section-label">Catalog</div>
+    <h2 class="page-title">Product List</h2>
+    <div class="filter-bar"><input class="input" id="searchInput" placeholder="Search your tracked products..."></div>
+    <div class="chip-row" id="categoryChips"></div>
+    <div id="productsGrid" class="product-grid"></div>
+  </div>
+</section>
+<!-- SETTINGS -->
   <section class="view" id="view-settings">
     <div class="container page-pad">
       <div class="section-label">Account</div>
