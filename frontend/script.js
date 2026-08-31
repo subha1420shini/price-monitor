@@ -61,69 +61,45 @@ function safeRemove(key) {
 // THEME
 // ============================================================
 
-const themeToggle =
-  document.getElementById("themeToggle");
+// ================= THEME =================
 
+const themeToggle = document.getElementById("themeToggle");
 
 function applyTheme(theme) {
+    document.body.setAttribute("data-theme", theme);
+    safeSet("theme", theme);
 
-  document.body.setAttribute(
-    "data-theme",
-    theme
-  );
+    // Theme toggle button exists only if added to HTML
+    if (themeToggle) {
+        const knob = themeToggle.querySelector(".knob");
 
-  if (themeToggle) {
-
-    const knob =
-      themeToggle.querySelector(".knob");
-
-    if (knob) {
-      knob.textContent =
-        theme === "dark"
-          ? "☾"
-          : "☀";
+        if (knob) {
+            knob.textContent = theme === "dark" ? "☾" : "☀";
+        }
     }
-  }
-
-  safeSet("theme", theme);
 }
 
-
-applyTheme(
-  safeGet("theme") || "light"
-);
-
+applyTheme(safeGet("theme") || "light");
 
 if (themeToggle) {
+    themeToggle.onclick = () => {
+        const current =
+            document.body.getAttribute("data-theme") || "light";
 
-  themeToggle.onclick = () => {
+        const next = current === "dark" ? "light" : "dark";
 
-    const current =
-      document.body.getAttribute(
-        "data-theme"
-      );
+        applyTheme(next);
 
-    const next =
-      current === "dark"
-        ? "light"
-        : "dark";
+        if (currentPage === "dashboard") {
+            drawChart();
+            drawCategoryPie();
 
-    applyTheme(next);
-
-    if (currentPage === "dashboard") {
-
-      drawChart();
-
-      drawCategoryPie();
-
-      if (siteBarChart) {
-        drawSiteBar(lastGroup);
-      }
-    }
-  };
+            if (siteBarChart) {
+                drawSiteBar(lastGroup);
+            }
+        }
+    };
 }
-
-
 // ============================================================
 // PASSWORD EYE TOGGLE
 // ============================================================

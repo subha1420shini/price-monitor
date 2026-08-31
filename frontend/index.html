@@ -1,9 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>PriceLens</title>
 
     <link rel="stylesheet" href="style.css">
@@ -14,17 +14,24 @@
 
 <body data-theme="light">
 
-    <!-- ================= WELCOME / LANDING ================= -->
+    <!-- =====================================================
+         WELCOME / LANDING PAGE
+    ====================================================== -->
+
     <section id="welcomeScreen" class="auth-screen">
+
         <div class="brand-top">
             <div class="brand-logo">P</div>
             <span>PriceLens</span>
         </div>
 
         <div class="landing-card">
+
             <div class="landing-icon">✦</div>
 
-            <p class="eyebrow">SMART PRICE MONITORING</p>
+            <p class="eyebrow">
+                SMART PRICE MONITORING
+            </p>
 
             <h1>
                 Shop smarter.<br>
@@ -33,20 +40,30 @@
 
             <p class="landing-text">
                 Track product prices across shopping platforms,
-                compare deals and get notified when your target price is reached.
+                compare deals and get notified when your target
+                price is reached.
             </p>
 
             <div class="landing-buttons">
-                <button id="welcomeLoginBtn" class="primary-btn">
+
+                <button
+                    type="button"
+                    id="welcomeLoginBtn"
+                    class="primary-btn">
                     Login
                 </button>
 
-                <button id="welcomeRegisterBtn" class="secondary-btn">
+                <button
+                    type="button"
+                    id="welcomeRegisterBtn"
+                    class="secondary-btn">
                     Create Account
                 </button>
+
             </div>
 
             <div class="landing-features">
+
                 <div>
                     <span>↘</span>
                     <p>Price Drop Alerts</p>
@@ -61,224 +78,507 @@
                     <span>◷</span>
                     <p>Track Automatically</p>
                 </div>
+
             </div>
+
         </div>
+
     </section>
 
 
-    <!-- ================= LOGIN ================= -->
+    <!-- =====================================================
+         LOGIN
+    ====================================================== -->
+
     <section id="loginScreen" class="auth-screen hidden">
+
         <div class="auth-card">
 
             <div class="auth-brand">
-                <div class="brand-logo">P</div>
-                <span>PriceLens</span>
+
+                <div class="brand-logo">
+                    P
+                </div>
+
+                <span>
+                    PriceLens
+                </span>
+
             </div>
 
-            <h2>Welcome back</h2>
-            <p>Login to continue tracking your favorite products.</p>
+            <h2>
+                Welcome back
+            </h2>
 
-            <label>Email</label>
-            <input id="loginEmail" type="email" placeholder="Enter your email">
+            <p>
+                Login to continue tracking your favorite products.
+            </p>
 
-            <label>Password</label>
+            <label for="loginEmail">
+                Email
+            </label>
+
+            <input
+                id="loginEmail"
+                type="email"
+                autocomplete="email"
+                placeholder="Enter your email"
+            >
+
+            <label for="loginPassword">
+                Password
+            </label>
+
             <div class="password-box">
-                <input id="loginPassword" type="password" placeholder="Enter your password">
-                <span class="eye-icon" data-target="loginPassword">👁</span>
+
+                <input
+                    id="loginPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Enter your password"
+                >
+
+                <span
+                    class="eye-icon"
+                    data-target="loginPassword">
+                    👁
+                </span>
+
             </div>
 
             <div class="auth-links">
-                <a href="#" id="forgotPasswordLink">Forgot password?</a>
+
+                <a
+                    href="#"
+                    id="forgotPasswordLink">
+                    Forgot password?
+                </a>
+
             </div>
 
-            <button id="loginSubmitBtn" class="primary-btn full-btn">
+            <button
+                type="button"
+                id="loginSubmitBtn"
+                class="primary-btn full-btn">
                 Login
             </button>
 
-            <p id="loginError" class="error-message"></p>
+            <p
+                id="loginError"
+                class="error-message">
+            </p>
 
             <p class="switch-text">
+
                 Don't have an account?
-                <a href="#" id="goToRegisterLink">Register</a>
+
+                <a
+                    href="#"
+                    id="goToRegisterLink">
+                    Register
+                </a>
+
             </p>
+
         </div>
+
     </section>
 
 
-    <!-- ================= REGISTER ================= -->
+    <!-- =====================================================
+         REGISTER
+    ====================================================== -->
+
     <section id="registerScreen" class="auth-screen hidden">
+
         <div class="auth-card">
 
             <div class="auth-brand">
-                <div class="brand-logo">P</div>
-                <span>PriceLens</span>
+
+                <div class="brand-logo">
+                    P
+                </div>
+
+                <span>
+                    PriceLens
+                </span>
+
             </div>
 
-            <h2>Create your account</h2>
-            <p>Start monitoring prices and never miss a better deal.</p>
+            <h2>
+                Create your account
+            </h2>
 
-            <label>Email</label>
-            <input id="registerEmail" type="email" placeholder="Enter your email">
+            <p>
+                Start monitoring prices and never miss a better deal.
+            </p>
 
-            <label>Password</label>
+            <label for="registerEmail">
+                Email
+            </label>
+
+            <input
+                id="registerEmail"
+                type="email"
+                autocomplete="email"
+                placeholder="Enter your email"
+            >
+
+            <label for="registerPassword">
+                Password
+            </label>
+
             <div class="password-box">
-                <input id="registerPassword" type="password" placeholder="Create a strong password">
-                <span class="eye-icon" data-target="registerPassword">👁</span>
+
+                <input
+                    id="registerPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Create a strong password"
+                >
+
+                <span
+                    class="eye-icon"
+                    data-target="registerPassword">
+                    👁
+                </span>
+
             </div>
 
-            <button id="registerSubmitBtn" class="primary-btn full-btn">
+            <button
+                type="button"
+                id="registerSubmitBtn"
+                class="primary-btn full-btn">
                 Create Account
             </button>
 
-            <p id="registerError" class="error-message"></p>
+            <p
+                id="registerError"
+                class="error-message">
+            </p>
 
             <p class="switch-text">
+
                 Already have an account?
-                <a href="#" id="goToLoginLink">Login</a>
+
+                <a
+                    href="#"
+                    id="goToLoginLink">
+                    Login
+                </a>
+
             </p>
+
         </div>
+
     </section>
 
 
-    <!-- ================= EMAIL VERIFICATION ================= -->
+    <!-- =====================================================
+         EMAIL VERIFICATION
+    ====================================================== -->
+
     <section id="verifyScreen" class="auth-screen hidden">
+
         <div class="auth-card verification-card">
 
-            <div class="verification-icon">✉</div>
+            <div class="verification-icon">
+                ✉
+            </div>
 
-            <h2>Verify your email</h2>
+            <h2>
+                Verify your email
+            </h2>
 
             <p id="verifyEmailLabel">
-                We sent a 6-digit verification code to your email.
+                We sent a 4-digit verification code to your email.
             </p>
+
+            <label for="verifyCode">
+                Verification Code
+            </label>
 
             <input
                 id="verifyCode"
                 type="text"
-                maxlength="6"
-                placeholder="Enter 6-digit code"
+                maxlength="4"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="Enter 4-digit code"
                 class="otp-input"
             >
 
-            <button id="verifySubmitBtn" class="primary-btn full-btn">
+            <button
+                type="button"
+                id="verifySubmitBtn"
+                class="primary-btn full-btn">
                 Verify Email
             </button>
 
-            <p id="verifyError" class="error-message"></p>
+            <p
+                id="verifyError"
+                class="error-message">
+            </p>
 
             <p class="switch-text">
+
                 Didn't receive the code?
-                <a href="#" id="resendCodeLink">Resend code</a>
+
+                <a
+                    href="#"
+                    id="resendCodeLink">
+                    Resend code
+                </a>
+
             </p>
+
         </div>
+
     </section>
 
 
-    <!-- ================= FORGOT PASSWORD ================= -->
+    <!-- =====================================================
+         FORGOT PASSWORD
+    ====================================================== -->
+
     <section id="forgotScreen" class="auth-screen hidden">
+
         <div class="auth-card">
 
             <div class="auth-brand">
-                <div class="brand-logo">P</div>
-                <span>PriceLens</span>
+
+                <div class="brand-logo">
+                    P
+                </div>
+
+                <span>
+                    PriceLens
+                </span>
+
             </div>
 
-            <h2>Forgot password?</h2>
-            <p>Enter your email and we'll send you a reset code.</p>
+            <h2>
+                Forgot password?
+            </h2>
 
-            <label>Email</label>
-            <input id="forgotEmail" type="email" placeholder="Enter your email">
+            <p>
+                Enter your email and we'll send you a reset code.
+            </p>
 
-            <button id="forgotSubmitBtn" class="primary-btn full-btn">
+            <label for="forgotEmail">
+                Email
+            </label>
+
+            <input
+                id="forgotEmail"
+                type="email"
+                autocomplete="email"
+                placeholder="Enter your email"
+            >
+
+            <button
+                type="button"
+                id="forgotSubmitBtn"
+                class="primary-btn full-btn">
                 Send Reset Code
             </button>
 
-            <p id="forgotError" class="error-message"></p>
+            <p
+                id="forgotError"
+                class="error-message">
+            </p>
 
             <p class="switch-text">
-                <a href="#" id="backToLoginFromForgot">Back to Login</a>
+
+                <a
+                    href="#"
+                    id="backToLoginFromForgot">
+                    Back to Login
+                </a>
+
             </p>
+
         </div>
+
     </section>
 
 
-    <!-- ================= RESET PASSWORD ================= -->
+    <!-- =====================================================
+         RESET PASSWORD
+    ====================================================== -->
+
     <section id="resetScreen" class="auth-screen hidden">
+
         <div class="auth-card">
 
             <div class="auth-brand">
-                <div class="brand-logo">P</div>
-                <span>PriceLens</span>
+
+                <div class="brand-logo">
+                    P
+                </div>
+
+                <span>
+                    PriceLens
+                </span>
+
             </div>
 
-            <h2>Reset password</h2>
-            <p>Enter the code sent to your email and create a new password.</p>
+            <h2>
+                Reset password
+            </h2>
 
-            <label>Reset Code</label>
-            <input id="resetCode" type="text" maxlength="6" placeholder="6-digit code">
+            <p>
+                Enter the code sent to your email and create
+                a new password.
+            </p>
 
-            <label>New Password</label>
+            <label for="resetCode">
+                Reset Code
+            </label>
+
+            <input
+                id="resetCode"
+                type="text"
+                maxlength="4"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="4-digit code"
+            >
+
+            <label for="resetNewPassword">
+                New Password
+            </label>
+
             <div class="password-box">
-                <input id="resetNewPassword" type="password" placeholder="Create new password">
-                <span class="eye-icon" data-target="resetNewPassword">👁</span>
+
+                <input
+                    id="resetNewPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Create new password"
+                >
+
+                <span
+                    class="eye-icon"
+                    data-target="resetNewPassword">
+                    👁
+                </span>
+
             </div>
 
-            <button id="resetSubmitBtn" class="primary-btn full-btn">
+            <button
+                type="button"
+                id="resetSubmitBtn"
+                class="primary-btn full-btn">
                 Reset Password
             </button>
 
-            <p id="resetError" class="error-message"></p>
+            <p
+                id="resetError"
+                class="error-message">
+            </p>
+
         </div>
+
     </section>
 
 
-    <!-- ================================================= -->
-    <!-- AFTER LOGIN / VERIFICATION - WELCOME PAGE         -->
-    <!-- ================================================= -->
+    <!-- =====================================================
+         MAIN APPLICATION
+    ====================================================== -->
 
     <section id="appShell" class="hidden">
 
-        <!-- NAVBAR -->
+        <!-- =================================================
+             NAVBAR
+        ================================================== -->
+
         <header class="navbar">
 
             <div class="nav-brand">
-                <div class="brand-logo small">P</div>
-                <span>PriceLens</span>
+
+                <div class="brand-logo small">
+                    P
+                </div>
+
+                <span>
+                    PriceLens
+                </span>
+
             </div>
 
             <nav class="nav-links">
-                <button data-page="home" class="active">Home</button>
-                <button data-page="dashboard">Dashboard</button>
-                <button data-page="productlist">Products</button>
-                <button data-page="settings">Settings</button>
+
+                <button
+                    type="button"
+                    data-page="home"
+                    class="active">
+                    Home
+                </button>
+
+                <button
+                    type="button"
+                    data-page="dashboard">
+                    Dashboard
+                </button>
+
+                <button
+                    type="button"
+                    data-page="productlist">
+                    Products
+                </button>
+
+                <button
+                    type="button"
+                    data-page="settings">
+                    Settings
+                </button>
+
             </nav>
 
             <div id="authStatus"></div>
+
         </header>
 
 
-        <!-- ================= HOME ================= -->
+        <!-- =================================================
+             MAIN CONTENT
+        ================================================== -->
+
         <main>
 
-            <section id="view-home" class="view active">
+
+            <!-- =============================================
+                 HOME
+            ============================================== -->
+
+            <section
+                id="view-home"
+                class="view active">
 
                 <div class="home-hero">
 
                     <div class="hero-content">
 
-                        <p class="eyebrow">WELCOME TO PRICELENS</p>
+                        <p class="eyebrow">
+                            WELCOME TO PRICELENS
+                        </p>
 
                         <h1>
                             Never overpay<br>
-                            <span>for a product again.</span>
+                            <span>
+                                for a product again.
+                            </span>
                         </h1>
 
                         <p>
-                            Track prices, compare shopping platforms and
-                            get notified when your perfect price arrives.
+                            Track prices, compare shopping platforms
+                            and get notified when your perfect price
+                            arrives.
                         </p>
 
                         <button
+                            type="button"
                             class="primary-btn"
                             onclick="goToPage('productlist')">
                             Start Tracking →
@@ -286,86 +586,168 @@
 
                     </div>
 
+
                     <div class="hero-visual">
 
                         <div class="floating-card card-one">
-                            <span>Price Drop</span>
-                            <strong>₹2,499</strong>
-                            <small>↓ 18% today</small>
+
+                            <span>
+                                Price Drop
+                            </span>
+
+                            <strong>
+                                ₹2,499
+                            </strong>
+
+                            <small>
+                                ↓ 18% today
+                            </small>
+
                         </div>
+
 
                         <div class="floating-card card-two">
-                            <span>Best Price</span>
-                            <strong>₹1,899</strong>
-                            <small>✓ Target reached</small>
+
+                            <span>
+                                Best Price
+                            </span>
+
+                            <strong>
+                                ₹1,899
+                            </strong>
+
+                            <small>
+                                ✓ Target reached
+                            </small>
+
                         </div>
 
+
                         <div class="price-orb">
-                            <span>₹</span>
+
+                            <span>
+                                ₹
+                            </span>
+
                         </div>
 
                     </div>
+
                 </div>
 
 
-                <!-- QUICK FEATURES -->
+                <!-- =========================================
+                     FEATURES
+                ========================================== -->
+
                 <section class="home-section">
 
                     <div class="section-heading">
-                        <p class="eyebrow">WHAT YOU CAN DO</p>
-                        <h2>Everything you need to shop smarter.</h2>
+
+                        <p class="eyebrow">
+                            WHAT YOU CAN DO
+                        </p>
+
+                        <h2>
+                            Everything you need to shop smarter.
+                        </h2>
+
                     </div>
+
 
                     <div class="feature-grid">
 
                         <div class="feature-card">
-                            <div class="feature-icon">↘</div>
-                            <h3>Price Drop Alerts</h3>
+
+                            <div class="feature-icon">
+                                ↘
+                            </div>
+
+                            <h3>
+                                Price Drop Alerts
+                            </h3>
+
                             <p>
-                                Set your target price and receive an alert
-                                when the product reaches it.
+                                Set your target price and receive
+                                an alert when the product reaches it.
                             </p>
+
                         </div>
 
-                        <div class="feature-card">
-                            <div class="feature-icon">⇄</div>
-                            <h3>Compare Prices</h3>
-                            <p>
-                                See prices from multiple shopping platforms
-                                in one place.
-                            </p>
-                        </div>
 
                         <div class="feature-card">
-                            <div class="feature-icon">◷</div>
-                            <h3>Automatic Tracking</h3>
+
+                            <div class="feature-icon">
+                                ⇄
+                            </div>
+
+                            <h3>
+                                Compare Prices
+                            </h3>
+
                             <p>
-                                PriceLens keeps checking tracked products
-                                automatically.
+                                See prices from multiple shopping
+                                platforms in one place.
                             </p>
+
+                        </div>
+
+
+                        <div class="feature-card">
+
+                            <div class="feature-icon">
+                                ◷
+                            </div>
+
+                            <h3>
+                                Automatic Tracking
+                            </h3>
+
+                            <p>
+                                PriceLens keeps checking tracked
+                                products automatically.
+                            </p>
+
                         </div>
 
                     </div>
+
                 </section>
 
 
-                <!-- PRODUCT AREA -->
+                <!-- =========================================
+                     RECENT PRODUCTS
+                ========================================== -->
+
                 <section class="home-section">
 
                     <div class="section-heading-row">
+
                         <div>
-                            <p class="eyebrow">YOUR PRODUCTS</p>
-                            <h2>Recently tracked</h2>
+
+                            <p class="eyebrow">
+                                YOUR PRODUCTS
+                            </p>
+
+                            <h2>
+                                Recently tracked
+                            </h2>
+
                         </div>
 
                         <button
+                            type="button"
                             class="secondary-btn"
                             onclick="goToPage('productlist')">
                             View all →
                         </button>
+
                     </div>
 
-                    <div id="dashboardGrid" class="masonry-grid">
+
+                    <div
+                        id="dashboardGrid"
+                        class="masonry-grid">
                     </div>
 
                 </section>
@@ -373,54 +755,128 @@
             </section>
 
 
-            <!-- ================= DASHBOARD ================= -->
-            <section id="view-dashboard" class="view">
+            <!-- =============================================
+                 DASHBOARD
+            ============================================== -->
+
+            <section
+                id="view-dashboard"
+                class="view">
 
                 <div class="page-header">
-                    <p class="eyebrow">OVERVIEW</p>
-                    <h1>Your PriceLens Dashboard</h1>
-                    <p>Monitor your tracked products and price changes.</p>
-                </div>
 
-                <div id="kpiGrid" class="kpi-grid"></div>
+                    <p class="eyebrow">
+                        OVERVIEW
+                    </p>
 
-                <div id="chartsWrap" class="charts-wrap hidden">
+                    <h1>
+                        Your PriceLens Dashboard
+                    </h1>
 
-                    <div class="chart-card">
-                        <h3 id="barChartTitle">Price by site</h3>
-                        <div class="chart-container">
-                            <canvas id="siteBarChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="chart-card">
-                        <h3>Categories</h3>
-                        <div class="chart-container">
-                            <canvas id="categoryPie"></canvas>
-                        </div>
-                    </div>
+                    <p>
+                        Monitor your tracked products and price changes.
+                    </p>
 
                 </div>
 
-                <div id="chartSection" class="chart-card hidden">
-                    <h3 id="chartTitle">Price history</h3>
+
+                <div
+                    id="kpiGrid"
+                    class="kpi-grid">
+                </div>
+
+
+                <div
+                    id="chartsWrap"
+                    class="charts-wrap hidden">
+
+
+                    <!-- SITE PRICE CHART -->
+
+                    <div class="chart-card">
+
+                        <h3 id="barChartTitle">
+                            Price by site
+                        </h3>
+
+                        <div class="chart-container">
+
+                            <canvas id="siteBarChart">
+                            </canvas>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CATEGORY CHART -->
+
+                    <div class="chart-card">
+
+                        <h3>
+                            Categories
+                        </h3>
+
+                        <div class="chart-container">
+
+                            <canvas id="categoryPie">
+                            </canvas>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- PRICE HISTORY -->
+
+                <div
+                    id="chartSection"
+                    class="chart-card hidden">
+
+                    <h3 id="chartTitle">
+                        Price history
+                    </h3>
 
                     <div class="chart-container">
-                        <canvas id="priceChart"></canvas>
+
+                        <canvas id="priceChart">
+                        </canvas>
+
                     </div>
+
                 </div>
 
             </section>
 
 
-            <!-- ================= PRODUCTS ================= -->
-            <section id="view-productlist" class="view">
+            <!-- =============================================
+                 PRODUCTS
+            ============================================== -->
+
+            <section
+                id="view-productlist"
+                class="view">
 
                 <div class="page-header">
-                    <p class="eyebrow">PRICE TRACKER</p>
-                    <h1>Track a new product</h1>
-                    <p>Paste a product URL and set the price you want.</p>
+
+                    <p class="eyebrow">
+                        PRICE TRACKER
+                    </p>
+
+                    <h1>
+                        Track a new product
+                    </h1>
+
+                    <p>
+                        Paste a product URL and set the price you want.
+                    </p>
+
                 </div>
+
+
+                <!-- ADD PRODUCT -->
 
                 <div class="add-product-card">
 
@@ -433,10 +889,14 @@
                     <input
                         id="targetPrice"
                         type="number"
+                        min="0"
                         placeholder="Target price ₹"
                     >
 
-                    <button id="addProductBtn" class="primary-btn">
+                    <button
+                        type="button"
+                        id="addProductBtn"
+                        class="primary-btn">
                         Track Product
                     </button>
 
@@ -444,37 +904,83 @@
 
                 </div>
 
+
+                <!-- SEARCH -->
+
                 <div class="products-toolbar">
+
                     <input
                         id="searchInput"
                         type="search"
                         placeholder="Search tracked products..."
                     >
 
-                    <div id="categoryChips" class="category-chips"></div>
+                    <div
+                        id="categoryChips"
+                        class="category-chips">
+                    </div>
+
                 </div>
 
-                <div id="productsGrid" class="masonry-grid"></div>
 
-                <div id="justAddedGrid" class="masonry-grid"></div>
+                <!-- PRODUCTS -->
+
+                <div
+                    id="productsGrid"
+                    class="masonry-grid">
+                </div>
+
+
+                <!-- JUST ADDED -->
+
+                <div
+                    id="justAddedGrid"
+                    class="masonry-grid">
+                </div>
 
             </section>
 
 
-            <!-- ================= SETTINGS ================= -->
-            <section id="view-settings" class="view">
+            <!-- =============================================
+                 SETTINGS
+            ============================================== -->
+
+            <section
+                id="view-settings"
+                class="view">
 
                 <div class="page-header">
-                    <p class="eyebrow">ACCOUNT</p>
-                    <h1>Your Settings</h1>
-                    <p>Manage your PriceLens profile.</p>
+
+                    <p class="eyebrow">
+                        ACCOUNT
+                    </p>
+
+                    <h1>
+                        Your Settings
+                    </h1>
+
+                    <p>
+                        Manage your PriceLens profile.
+                    </p>
+
                 </div>
+
 
                 <div class="settings-card">
 
-                    <div id="profilePicWrap" class="profile-picture">
-                        <span>P</span>
+
+                    <!-- PROFILE IMAGE -->
+
+                    <div
+                        id="profilePicWrap"
+                        class="profile-picture">
+
+                        <span>
+                            P
+                        </span>
+
                     </div>
+
 
                     <input
                         id="picFileInput"
@@ -483,53 +989,144 @@
                         hidden
                     >
 
-                    <p id="profileNameDisplay" class="profile-name">
+
+                    <!-- PROFILE INFO -->
+
+                    <p
+                        id="profileNameDisplay"
+                        class="profile-name">
                         Your name
                     </p>
 
-                    <p id="profileEmailDisplay" class="profile-email"></p>
+                    <p
+                        id="profileEmailDisplay"
+                        class="profile-email">
+                    </p>
 
-                    <span id="verifyBadge" class="verify-badge">
+
+                    <!-- VERIFICATION -->
+
+                    <span
+                        id="verifyBadge"
+                        class="verify-badge">
                         Verified
                     </span>
 
-                    <label>Name</label>
-                    <input id="settingsName" type="text">
 
-                    <label>Phone</label>
-                    <input id="settingsPhone" type="text">
+                    <!-- NAME -->
 
-                    <label>Age</label>
-                    <input id="settingsAge" type="number">
+                    <label for="settingsName">
+                        Name
+                    </label>
 
-                    <label>Gender</label>
+                    <input
+                        id="settingsName"
+                        type="text"
+                        placeholder="Enter your name"
+                    >
+
+
+                    <!-- PHONE -->
+
+                    <label for="settingsPhone">
+                        Phone
+                    </label>
+
+                    <input
+                        id="settingsPhone"
+                        type="tel"
+                        placeholder="Enter your phone number"
+                    >
+
+
+                    <!-- AGE -->
+
+                    <label for="settingsAge">
+                        Age
+                    </label>
+
+                    <input
+                        id="settingsAge"
+                        type="number"
+                        min="1"
+                        max="120"
+                        placeholder="Enter your age"
+                    >
+
+
+                    <!-- GENDER -->
+
+                    <label>
+                        Gender
+                    </label>
 
                     <div class="gender-options">
+
                         <label>
-                            <input type="radio" name="gender" value="male">
+
+                            <input
+                                type="radio"
+                                name="gender"
+                                value="male">
+
                             Male
+
                         </label>
 
+
                         <label>
-                            <input type="radio" name="gender" value="female">
+
+                            <input
+                                type="radio"
+                                name="gender"
+                                value="female">
+
                             Female
+
                         </label>
 
+
                         <label>
-                            <input type="radio" name="gender" value="other">
+
+                            <input
+                                type="radio"
+                                name="gender"
+                                value="other">
+
                             Other
+
                         </label>
+
                     </div>
 
-                    <p>Email: <span id="settingsEmail"></span></p>
 
-                    <button id="saveSettingsBtn" class="primary-btn">
+                    <!-- EMAIL -->
+
+                    <p>
+                        Email:
+                        <span id="settingsEmail"></span>
+                    </p>
+
+
+                    <!-- SAVE -->
+
+                    <button
+                        type="button"
+                        id="saveSettingsBtn"
+                        class="primary-btn">
                         Save Settings
                     </button>
 
-                    <button id="logoutBtnSettings" class="logout-btn">
+
+                    <!-- LOGOUT -->
+
+                    <button
+                        type="button"
+                        id="logoutBtnSettings"
+                        class="logout-btn">
                         Logout
                     </button>
+
 
                     <p id="settingsStatus"></p>
 
@@ -542,8 +1139,11 @@
     </section>
 
 
+    <!-- =====================================================
+         JAVASCRIPT
+    ====================================================== -->
+
     <script src="script.js"></script>
 
 </body>
 </html>
-```
