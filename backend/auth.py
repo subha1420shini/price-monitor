@@ -43,7 +43,7 @@ def create_access_token(data: dict) -> str:
 
 def generate_otp() -> str:
     """6-digit numeric code used for both email verification and password reset."""
-    return f"{random.randint(0, 999999):06d}"
+    return f"{random.randint(0, 9999):06d}"
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> models.User:
