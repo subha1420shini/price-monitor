@@ -1,15 +1,18 @@
 """
 scraper.py
 ----------
-Scrapes product name + price + image from Amazon, Flipkart, Meesho, Myntra,
-and Purplle product pages, and can search each site for a matching product
-by name (used to build cross-platform price comparisons).
+Scrapes product name + price + image from Flipkart, Ajio, Snapdeal, and
+Nykaa product pages, and can search each site for a matching product by
+name (used to build cross-platform price comparisons).
 
-Honesty note for your viva: Amazon and Myntra both use heavy bot-detection
-and/or JavaScript-rendered pages, so scraping them with plain HTTP requests
-is unreliable - this mirrors a real limitation of scraping without paid
-APIs or browser automation (Selenium). Flipkart, Meesho, and Purplle are
-more likely to return usable server-rendered HTML.
+Honesty note for your viva: Amazon, Meesho, Myntra, and Purplle were all
+tried first, but each blocked automated requests (bot-detection) or
+render their pages via JavaScript, so plain HTTP scraping could not read
+them reliably. Flipkart, Ajio, Snapdeal, and Nykaa are more likely to
+return usable server-rendered HTML, though even these are not guaranteed -
+e-commerce sites can change their bot-detection or page structure at any
+time. Cross-platform matching is done by comparing product NAME text, not
+images - image-based matching would need a paid visual search API.
 """
 
 import re
@@ -32,15 +35,15 @@ HEADERS = {
     "Accept-Language": "en-IN,en;q=0.9",
 }
 
-SITES = ["amazon", "flipkart", "meesho", "myntra", "purplle"]
+SITES = ["flipkart", "ajio", "snapdeal", "nykaa"]
 
 SEARCH_URLS = {
-    "amazon": "https://www.amazon.in/s?k={q}",
     "flipkart": "https://www.flipkart.com/search?q={q}",
-    "meesho": "https://www.meesho.com/search?q={q}",
-    "myntra": "https://www.myntra.com/{q}",
-    "purplle": "https://www.purplle.com/search?q={q}",
+    "ajio": "https://www.ajio.com/search/?text={q}",
+    "snapdeal": "https://www.snapdeal.com/search?keyword={q}",
+    "nykaa": "https://www.nykaa.com/search/result/?q={q}",
 }
+
 CATEGORY_KEYWORDS = {
     "Electronics": ["phone", "mobile", "laptop", "earphone", "earbud", "headphone",
                     "speaker", "smartwatch", "watch", "tablet", "camera", "tv",
@@ -71,7 +74,7 @@ def detect_site(url: str) -> str:
     for site in SITES:
         if site in host:
             return site
-    raise ValueError("Only amazon.in, flipkart.com, meesho.com, myntra.com and purplle.com product URLs are supported")
+    raise ValueError("Only flipkart.com, ajio.com, snapdeal.com and nykaa.com product URLs are supported")
 
 
 def _clean_price(text: str):
@@ -103,10 +106,10 @@ def _fetch(url: str) -> BeautifulSoup:
 
 def _generic_extract(soup: BeautifulSoup, url: str) -> dict:
     """
-    Fallback extractor used for Meesho / Myntra / Purplle: takes the page
+    Fallback extractor used for Ajio / Snapdeal / Nykaa: takes the page
     <title> as the product name and the first rupee amount on the page as
-    the price. Works reasonably well on server-rendered pages; may fail on
-    heavily JavaScript-rendered pages (most likely on Myntra).
+    the price. Works on server-rendered pages; may fail if a site switches
+    to JavaScript-rendered content.
     """
     name = soup.title.get_text(strip=True) if soup.title else "Unknown product"
     name = re.split(r"[|\-–]", name)[0].strip()
@@ -118,27 +121,6 @@ def _generic_extract(soup: BeautifulSoup, url: str) -> dict:
 
     img_el = soup.find("img", src=re.compile(r"^https?://"))
     image_url = img_el.get("src") if img_el else None
-
-    return {"name": name, "price": price, "image_url": image_url}
-
-
-def scrape_amazon(url: str) -> dict:
-    soup = _fetch(url)
-    title_el = soup.select_one("#productTitle")
-    name = title_el.get_text(strip=True) if title_el else "Unknown product"
-
-    price = None
-    for selector in ["span.a-price span.a-offscreen", "#priceblock_ourprice", "#priceblock_dealprice"]:
-        el = soup.select_one(selector)
-        if el:
-            price = _clean_price(el.get_text())
-            if price:
-                break
-    if price is None:
-        raise ValueError("Could not find price on Amazon page")
-
-    img_el = soup.select_one("#landingImage") or soup.select_one("#imgBlkFront")
-    image_url = (img_el.get("src") or img_el.get("data-old-hires")) if img_el else None
 
     return {"name": name, "price": price, "image_url": image_url}
 
@@ -166,24 +148,23 @@ def scrape_flipkart(url: str) -> dict:
     return {"name": name, "price": price, "image_url": image_url}
 
 
-def scrape_meesho(url: str) -> dict:
+def scrape_ajio(url: str) -> dict:
     return _generic_extract(_fetch(url), url)
 
 
-def scrape_myntra(url: str) -> dict:
+def scrape_snapdeal(url: str) -> dict:
     return _generic_extract(_fetch(url), url)
 
 
-def scrape_purplle(url: str) -> dict:
+def scrape_nykaa(url: str) -> dict:
     return _generic_extract(_fetch(url), url)
 
 
 SCRAPERS = {
-    "amazon": scrape_amazon,
     "flipkart": scrape_flipkart,
-    "meesho": scrape_meesho,
-    "myntra": scrape_myntra,
-    "purplle": scrape_purplle,
+    "ajio": scrape_ajio,
+    "snapdeal": scrape_snapdeal,
+    "nykaa": scrape_nykaa,
 }
 
 
@@ -235,9 +216,9 @@ def _search_generic(site: str, query: str) -> dict | None:
 def find_all_platform_matches(source_result: dict) -> list[dict]:
     """
     Given a scraped product, searches every OTHER supported site for a
-    matching listing. Returns a list of matches that were found (may be
-    empty - not every site will have every product, and some sites resist
-    scraping entirely, e.g. Myntra's JS-rendered pages).
+    matching listing by comparing product NAME text (not images). Returns
+    a list of matches found - may be empty if a site blocks scraping or
+    renders content only via JavaScript.
     """
     query = clean_title_for_search(source_result["name"])
     matches = []
