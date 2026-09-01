@@ -1,3 +1,9 @@
+"""
+database.py
+-----------
+PostgreSQL database connection for PriceLens.
+"""
+
 import os
 
 from dotenv import load_dotenv
@@ -6,26 +12,50 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
+
+# ============================================================
+# DATABASE URL
+# ============================================================
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set in .env")
+    raise RuntimeError(
+        "DATABASE_URL is not set in the environment."
+    )
 
-print("Database URL:", DATABASE_URL.split("@")[0] + "@****")
+
+# ============================================================
+# ENGINE
+# ============================================================
 
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )
+
+
+# ============================================================
+# SESSION
+# ============================================================
 
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine,
 )
+
+
+# ============================================================
+# BASE
+# ============================================================
 
 Base = declarative_base()
 
+
+# ============================================================
+# DATABASE DEPENDENCY
+# ============================================================
 
 def get_db():
     db = SessionLocal()

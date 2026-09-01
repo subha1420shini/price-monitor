@@ -1,26 +1,72 @@
 """
 main.py
 -------
-Entry point wiring database, models, auth, email verification,
-password reset, scraper, and scheduler into one FastAPI app.
+PriceLens FastAPI backend
+
+Features:
+- User registration
+- Email OTP verification
+- Resend verification OTP
+- Login with JWT
+- Forgot password OTP
+- Reset password
+- Product tracking
+- Cross-platform price matching
+- Price history
+- Dashboard data
+- User settings
+- Profile picture
+- Scheduler
 """
 
 import uuid
 from typing import List
 from datetime import datetime, timedelta
+
 from dotenv import load_dotenv
+
+# ------------------------------------------------------------
+# LOAD ENVIRONMENT VARIABLES FIRST
+# ------------------------------------------------------------
 
 load_dotenv()
 
-from fastapi import FastAPI, Depends, HTTPException, status
+
+# ------------------------------------------------------------
+# FASTAPI
+# ------------------------------------------------------------
+
+from fastapi import (
+    FastAPI,
+    Depends,
+    HTTPException,
+    status,
+    BackgroundTasks,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+
+
+# ------------------------------------------------------------
+# DATABASE
+# ------------------------------------------------------------
+
 from sqlalchemy.orm import Session
 
 import models
 import schemas
 
-from database import engine, get_db, Base
+from database import (
+    engine,
+    get_db,
+    Base,
+)
+
+
+# ------------------------------------------------------------
+# AUTH
+# ------------------------------------------------------------
 
 from auth import (
     hash_password,
@@ -30,15 +76,30 @@ from auth import (
     generate_otp,
 )
 
+
+# ------------------------------------------------------------
+# EMAIL
+# ------------------------------------------------------------
+
 from alerts import (
     send_verification_email,
     send_reset_code_email,
 )
 
+
+# ------------------------------------------------------------
+# SCRAPER
+# ------------------------------------------------------------
+
 from scraper import (
     scrape_product,
     find_all_platform_matches,
 )
+
+
+# ------------------------------------------------------------
+# SCHEDULER
+# ------------------------------------------------------------
 
 from scheduler import start_scheduler
 
@@ -56,7 +117,11 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="PriceLens API",
-    description="Cloud-based e-commerce price monitoring and alert system",
+    description=(
+        "Cloud-based e-commerce price monitoring "
+        "and alert system"
+    ),
+    version="1.0.0",
 )
 
 
@@ -66,15 +131,21 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=[
         "https://pricelens-frontend.onrender.com",
+
         "http://localhost:5500",
         "http://127.0.0.1:5500",
+
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"],
 )
 
@@ -85,6 +156,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
+
     return {
         "message": "PriceLens Backend Running",
         "status": "online",
@@ -92,18 +164,43 @@ def root():
 
 
 # ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy",
+        "service": "PriceLens API",
+    }
+
+
+# ============================================================
 # AUTH
+# ============================================================
+
+
+# ============================================================
+# REGISTER
 # ============================================================
 
 @app.post(
     "/auth/register",
-    response_model=schemas.UserOut
+    response_model=schemas.UserOut,
 )
 def register(
     payload: schemas.UserCreate,
-    db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
+
+    # --------------------------------------------------------
+    # Clean email
+    # --------------------------------------------------------
+
     email = payload.email.strip().lower()
+
 
     # --------------------------------------------------------
     # Check existing account
@@ -111,59 +208,98 @@ def register(
 
     existing = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if existing:
+
         raise HTTPException(
             status_code=400,
-            detail="An account with this email already exists"
+            detail="An account with this email already exists",
         )
 
+
     # --------------------------------------------------------
-    # Generate verification OTP
+    # Generate OTP
     # --------------------------------------------------------
 
     code = generate_otp()
+
+
+    # --------------------------------------------------------
+    # OTP expiry
+    # --------------------------------------------------------
+
+    expiry = (
+        datetime.utcnow()
+        + timedelta(minutes=10)
+    )
+
 
     # --------------------------------------------------------
     # Create user
     # --------------------------------------------------------
 
     user = models.User(
-        email=email,
-        hashed_password=hash_password(payload.password),
 
-        # User must verify email first
+        email=email,
+
+        hashed_password=
+            hash_password(
+                payload.password
+            ),
+
         is_verified=False,
 
         verification_code=code,
 
-        verification_code_expiry=(
-            datetime.utcnow() + timedelta(minutes=10)
-        ),
+        verification_code_expiry=expiry,
+
     )
+
 
     db.add(user)
+
     db.commit()
+
     db.refresh(user)
 
+
     # --------------------------------------------------------
-    # Send verification email
+    # SEND EMAIL IN BACKGROUND
+    #
+    # IMPORTANT:
+    # This prevents register API from hanging while
+    # SMTP/email service is slow.
     # --------------------------------------------------------
 
-    email_sent = send_verification_email(
+    background_tasks.add_task(
+        send_verification_email,
         email,
-        code
+        code,
     )
 
-    if not email_sent:
-        # Account exists but email configuration failed.
-        # We keep the account so the user can resend later.
-        print(
-            f"WARNING: Verification email could not be sent to {email}"
-        )
+
+    # --------------------------------------------------------
+    # Server log
+    # --------------------------------------------------------
+
+    print(
+        f"Registration successful for {email}"
+    )
+
+    print(
+        f"Verification OTP for {email}: {code}"
+    )
+
+
+    # --------------------------------------------------------
+    # Return immediately
+    # --------------------------------------------------------
 
     return user
 
@@ -174,39 +310,54 @@ def register(
 
 @app.post(
     "/auth/verify-email",
-    response_model=schemas.Token
+    response_model=schemas.Token,
 )
 def verify_email(
     payload: schemas.VerifyEmailRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+
     email = payload.email.strip().lower()
+
+
+    # --------------------------------------------------------
+    # Find user
+    # --------------------------------------------------------
 
     user = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if not user:
+
         raise HTTPException(
             status_code=400,
-            detail="Email does not exist"
+            detail="Email does not exist",
         )
+
 
     # --------------------------------------------------------
     # Already verified
     # --------------------------------------------------------
 
     if user.is_verified:
-        token = create_access_token({
-            "sub": user.email
-        })
+
+        token = create_access_token(
+            {
+                "sub": user.email
+            }
+        )
 
         return {
             "access_token": token,
-            "token_type": "bearer"
+            "token_type": "bearer",
         }
+
 
     # --------------------------------------------------------
     # Check OTP
@@ -216,10 +367,12 @@ def verify_email(
         not user.verification_code
         or user.verification_code != payload.code
     ):
+
         raise HTTPException(
             status_code=400,
-            detail="Incorrect verification code"
+            detail="Incorrect verification code",
         )
+
 
     # --------------------------------------------------------
     # Check expiry
@@ -227,34 +380,49 @@ def verify_email(
 
     if (
         user.verification_code_expiry
-        and datetime.utcnow() > user.verification_code_expiry
+        and datetime.utcnow()
+        > user.verification_code_expiry
     ):
+
         raise HTTPException(
             status_code=400,
-            detail="Verification code expired, please request a new one"
+            detail=(
+                "Verification code expired. "
+                "Please request a new one."
+            ),
         )
 
+
     # --------------------------------------------------------
-    # Verify user
+    # Verify account
     # --------------------------------------------------------
 
     user.is_verified = True
+
     user.verification_code = None
+
     user.verification_code_expiry = None
+
 
     db.commit()
 
+    db.refresh(user)
+
+
     # --------------------------------------------------------
-    # Login automatically after verification
+    # Create JWT
     # --------------------------------------------------------
 
-    token = create_access_token({
-        "sub": user.email
-    })
+    token = create_access_token(
+        {
+            "sub": user.email
+        }
+    )
+
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
 
 
@@ -265,55 +433,84 @@ def verify_email(
 @app.post("/auth/resend-code")
 def resend_code(
     payload: schemas.ResendCodeRequest,
-    db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
+
     email = payload.email.strip().lower()
+
+
+    # --------------------------------------------------------
+    # Find user
+    # --------------------------------------------------------
 
     user = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if not user:
+
         raise HTTPException(
             status_code=400,
-            detail="Email does not exist"
+            detail="Email does not exist",
         )
+
+
+    # --------------------------------------------------------
+    # Already verified
+    # --------------------------------------------------------
 
     if user.is_verified:
+
         raise HTTPException(
             status_code=400,
-            detail="Email is already verified"
+            detail="Email is already verified",
         )
 
+
+    # --------------------------------------------------------
     # Generate new OTP
+    # --------------------------------------------------------
 
     code = generate_otp()
+
 
     user.verification_code = code
 
     user.verification_code_expiry = (
-        datetime.utcnow() + timedelta(minutes=10)
+        datetime.utcnow()
+        + timedelta(minutes=10)
     )
+
 
     db.commit()
 
-    # Send email
 
-    success = send_verification_email(
+    # --------------------------------------------------------
+    # Send in background
+    # --------------------------------------------------------
+
+    background_tasks.add_task(
+        send_verification_email,
         email,
-        code
+        code,
     )
 
-    if not success:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not send verification email"
-        )
+
+    print(
+        f"New verification OTP for {email}: {code}"
+    )
+
 
     return {
-        "message": "Verification code resent successfully"
+        "message": (
+            "Verification code sent successfully"
+        )
     }
 
 
@@ -323,52 +520,91 @@ def resend_code(
 
 @app.post(
     "/auth/login",
-    response_model=schemas.Token
+    response_model=schemas.Token,
 )
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    email = form_data.username.strip().lower()
+
+    email = (
+        form_data.username
+        .strip()
+        .lower()
+    )
+
+
+    # --------------------------------------------------------
+    # Find user
+    # --------------------------------------------------------
 
     user = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if not user:
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email does not exist"
+            detail="Email does not exist",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
         )
 
-    # Check password
+
+    # --------------------------------------------------------
+    # Verify password
+    # --------------------------------------------------------
 
     if not verify_password(
         form_data.password,
-        user.hashed_password
+        user.hashed_password,
     ):
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password"
+            detail="Incorrect password",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
         )
 
-    # Check verification
+
+    # --------------------------------------------------------
+    # Check email verification
+    # --------------------------------------------------------
 
     if not user.is_verified:
+
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email before logging in"
+            detail=(
+                "Please verify your email "
+                "before logging in"
+            ),
         )
 
-    token = create_access_token({
-        "sub": user.email
-    })
+
+    # --------------------------------------------------------
+    # Create JWT
+    # --------------------------------------------------------
+
+    token = create_access_token(
+        {
+            "sub": user.email
+        }
+    )
+
 
     return {
         "access_token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
 
 
@@ -379,45 +615,72 @@ def login(
 @app.post("/auth/forgot-password")
 def forgot_password(
     payload: schemas.ForgotPasswordRequest,
-    db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
 ):
+
     email = payload.email.strip().lower()
+
+
+    # --------------------------------------------------------
+    # Find user
+    # --------------------------------------------------------
 
     user = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if not user:
+
         raise HTTPException(
             status_code=400,
-            detail="Email does not exist"
+            detail="Email does not exist",
         )
 
+
+    # --------------------------------------------------------
+    # Generate reset OTP
+    # --------------------------------------------------------
+
     code = generate_otp()
+
 
     user.reset_code = code
 
     user.reset_code_expiry = (
-        datetime.utcnow() + timedelta(minutes=10)
+        datetime.utcnow()
+        + timedelta(minutes=10)
     )
+
 
     db.commit()
 
-    success = send_reset_code_email(
+
+    # --------------------------------------------------------
+    # Send email in background
+    # --------------------------------------------------------
+
+    background_tasks.add_task(
+        send_reset_code_email,
         email,
-        code
+        code,
     )
 
-    if not success:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not send reset code"
-        )
+
+    print(
+        f"Password reset OTP for {email}: {code}"
+    )
+
 
     return {
-        "message": "Reset code sent to your email"
+        "message": (
+            "Reset code sent to your email"
+        )
     }
 
 
@@ -428,57 +691,88 @@ def forgot_password(
 @app.post("/auth/reset-password")
 def reset_password(
     payload: schemas.ResetPasswordRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+
     email = payload.email.strip().lower()
+
+
+    # --------------------------------------------------------
+    # Find user
+    # --------------------------------------------------------
 
     user = (
         db.query(models.User)
-        .filter(models.User.email == email)
+        .filter(
+            models.User.email == email
+        )
         .first()
     )
 
+
     if not user:
+
         raise HTTPException(
             status_code=400,
-            detail="Email does not exist"
+            detail="Email does not exist",
         )
 
-    # Check code
+
+    # --------------------------------------------------------
+    # Check OTP
+    # --------------------------------------------------------
 
     if (
         not user.reset_code
         or user.reset_code != payload.code
     ):
+
         raise HTTPException(
             status_code=400,
-            detail="Incorrect reset code"
+            detail="Incorrect reset code",
         )
 
+
+    # --------------------------------------------------------
     # Check expiry
+    # --------------------------------------------------------
 
     if (
         user.reset_code_expiry
-        and datetime.utcnow() > user.reset_code_expiry
+        and datetime.utcnow()
+        > user.reset_code_expiry
     ):
+
         raise HTTPException(
             status_code=400,
-            detail="Reset code expired, please request a new one"
+            detail=(
+                "Reset code expired. "
+                "Please request a new one."
+            ),
         )
 
-    # Change password
+
+    # --------------------------------------------------------
+    # Update password
+    # --------------------------------------------------------
 
     user.hashed_password = hash_password(
         payload.new_password
     )
 
+
     user.reset_code = None
+
     user.reset_code_expiry = None
+
 
     db.commit()
 
+
     return {
-        "message": "Password reset successful"
+        "message": (
+            "Password reset successful"
+        )
     }
 
 
@@ -486,17 +780,28 @@ def reset_password(
 # PRODUCTS
 # ============================================================
 
+
+# ============================================================
+# GET ALL PRODUCTS
+# ============================================================
+
 @app.get(
     "/products",
-    response_model=List[schemas.ProductOut]
+    response_model=List[schemas.ProductOut],
 )
 def list_products(
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
+
     return (
         db.query(models.Product)
-        .filter(models.Product.owner_id == user.id)
+        .filter(
+            models.Product.owner_id == user.id
+        )
+        .order_by(
+            models.Product.created_at.desc()
+        )
         .all()
     )
 
@@ -507,105 +812,202 @@ def list_products(
 
 @app.post(
     "/products",
-    response_model=List[schemas.ProductOut]
+    response_model=List[schemas.ProductOut],
 )
 def add_product(
     payload: schemas.ProductCreate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
+
+    # --------------------------------------------------------
+    # Scrape main product
+    # --------------------------------------------------------
+
     try:
+
         scraped = scrape_product(
             str(payload.url)
         )
 
     except Exception as e:
+
         raise HTTPException(
             status_code=400,
-            detail=f"Could not read price from that URL: {e}"
+            detail=(
+                "Could not read price from that URL: "
+                f"{e}"
+            ),
         )
+
+
+    # --------------------------------------------------------
+    # Group ID
+    # --------------------------------------------------------
 
     group_id = str(uuid.uuid4())
 
+
     created = []
 
-    # --------------------------------------------------------
-    # Main product
-    # --------------------------------------------------------
+
+    # ========================================================
+    # MAIN PRODUCT
+    # ========================================================
 
     main_product = models.Product(
+
         owner_id=user.id,
+
         name=scraped["name"],
+
         url=str(payload.url),
+
         site=scraped["site"],
+
         target_price=payload.target_price,
+
         current_price=scraped["price"],
+
         image_url=scraped.get("image_url"),
+
         category=scraped.get("category"),
+
         group_id=group_id,
+
         is_primary=True,
+
+        is_active=True,
+
+        last_checked=datetime.utcnow(),
+
     )
+
 
     db.add(main_product)
+
     db.commit()
+
     db.refresh(main_product)
 
-    # Price history
 
-    db.add(
-        models.PriceHistory(
-            product_id=main_product.id,
-            price=scraped["price"]
-        )
+    # --------------------------------------------------------
+    # Price history
+    # --------------------------------------------------------
+
+    history = models.PriceHistory(
+
+        product_id=main_product.id,
+
+        price=scraped["price"],
+
+        checked_at=datetime.utcnow(),
+
     )
 
+
+    db.add(history)
+
     db.commit()
+
 
     created.append(main_product)
 
-    # --------------------------------------------------------
-    # Cross platform matches
-    # --------------------------------------------------------
+
+    # ========================================================
+    # CROSS PLATFORM MATCHES
+    # ========================================================
 
     try:
+
         matches = find_all_platform_matches(
             scraped
         )
 
+
         for match in matches:
 
+            # ----------------------------------------------
+            # Avoid invalid match
+            # ----------------------------------------------
+
+            if not match.get("url"):
+                continue
+
+            if match.get("price") is None:
+                continue
+
+
+            # ----------------------------------------------
+            # Create twin product
+            # ----------------------------------------------
+
             twin = models.Product(
+
                 owner_id=user.id,
+
                 name=match["name"],
+
                 url=match["url"],
+
                 site=match["site"],
+
                 target_price=payload.target_price,
+
                 current_price=match["price"],
+
                 image_url=match.get("image_url"),
+
                 category=match.get("category"),
+
                 group_id=group_id,
+
                 is_primary=False,
+
+                is_active=True,
+
+                last_checked=datetime.utcnow(),
+
             )
 
+
             db.add(twin)
+
             db.commit()
+
             db.refresh(twin)
+
+
+            # ----------------------------------------------
+            # Price history
+            # ----------------------------------------------
 
             db.add(
                 models.PriceHistory(
+
                     product_id=twin.id,
-                    price=match["price"]
+
+                    price=match["price"],
+
+                    checked_at=datetime.utcnow(),
+
                 )
             )
 
+
             db.commit()
+
 
             created.append(twin)
 
+
     except Exception as e:
+
         print(
-            f"Cross-platform matching skipped: {e}"
+            "Cross-platform matching skipped:",
+            e,
         )
+
 
     return created
 
@@ -616,27 +1018,31 @@ def add_product(
 
 @app.get(
     "/products/{product_id}",
-    response_model=schemas.ProductDetail
+    response_model=schemas.ProductDetail,
 )
 def get_product(
     product_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
+
     product = (
         db.query(models.Product)
         .filter(
             models.Product.id == product_id,
-            models.Product.owner_id == user.id
+            models.Product.owner_id == user.id,
         )
         .first()
     )
 
+
     if not product:
+
         raise HTTPException(
             status_code=404,
-            detail="Product not found"
+            detail="Product not found",
         )
+
 
     return product
 
@@ -645,29 +1051,37 @@ def get_product(
 # DELETE PRODUCT
 # ============================================================
 
-@app.delete("/products/{product_id}")
+@app.delete(
+    "/products/{product_id}"
+)
 def delete_product(
     product_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
+
     product = (
         db.query(models.Product)
         .filter(
             models.Product.id == product_id,
-            models.Product.owner_id == user.id
+            models.Product.owner_id == user.id,
         )
         .first()
     )
 
+
     if not product:
+
         raise HTTPException(
             status_code=404,
-            detail="Product not found"
+            detail="Product not found",
         )
 
+
     db.delete(product)
+
     db.commit()
+
 
     return {
         "message": "Product deleted"
@@ -680,52 +1094,76 @@ def delete_product(
 
 @app.post(
     "/products/{product_id}/refresh",
-    response_model=schemas.ProductOut
+    response_model=schemas.ProductOut,
 )
 def refresh_product(
     product_id: int,
     db: Session = Depends(get_db),
-    user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
+
     product = (
         db.query(models.Product)
         .filter(
             models.Product.id == product_id,
-            models.Product.owner_id == user.id
+            models.Product.owner_id == user.id,
         )
         .first()
     )
 
+
     if not product:
+
         raise HTTPException(
             status_code=404,
-            detail="Product not found"
+            detail="Product not found",
         )
 
+
     try:
+
         scraped = scrape_product(
             product.url
         )
 
-        product.current_price = scraped["price"]
 
-        product.last_checked = datetime.utcnow()
+        product.current_price = (
+            scraped["price"]
+        )
+
+
+        product.last_checked = (
+            datetime.utcnow()
+        )
+
 
         db.add(
             models.PriceHistory(
+
                 product_id=product.id,
-                price=scraped["price"]
+
+                price=scraped["price"],
+
+                checked_at=datetime.utcnow(),
+
             )
         )
 
+
         db.commit()
+
         db.refresh(product)
 
+
     except Exception as e:
+
         raise HTTPException(
             status_code=400,
-            detail=f"Could not refresh product: {e}"
+            detail=(
+                f"Could not refresh product: {e}"
+            ),
         )
+
 
     return product
 
@@ -734,25 +1172,36 @@ def refresh_product(
 # SETTINGS
 # ============================================================
 
+
+# ============================================================
+# GET SETTINGS
+# ============================================================
+
 @app.get(
     "/settings",
-    response_model=schemas.UserOut
+    response_model=schemas.UserOut,
 )
 def get_settings(
-    user: models.User = Depends(get_current_user)
+    user: models.User = Depends(get_current_user),
 ):
+
     return user
 
 
+# ============================================================
+# UPDATE SETTINGS
+# ============================================================
+
 @app.put(
     "/settings",
-    response_model=schemas.UserOut
+    response_model=schemas.UserOut,
 )
 def update_settings(
     payload: schemas.SettingsUpdate,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
+
     fields = [
         "name",
         "phone",
@@ -762,22 +1211,29 @@ def update_settings(
         "theme_preference",
     ]
 
+
     for field in fields:
 
         value = getattr(
             payload,
-            field
+            field,
+            None,
         )
 
+
         if value is not None:
+
             setattr(
                 user,
                 field,
-                value
+                value,
             )
 
+
     db.commit()
+
     db.refresh(user)
+
 
     return user
 
@@ -788,4 +1244,40 @@ def update_settings(
 
 @app.on_event("startup")
 def on_startup():
-    start_scheduler()
+
+    print(
+        "========================================"
+    )
+
+    print(
+        "PriceLens API starting..."
+    )
+
+    print(
+        "Database connected"
+    )
+
+    print(
+        "========================================"
+    )
+
+
+    try:
+
+        start_scheduler()
+
+        print(
+            "Price monitoring scheduler started"
+        )
+
+    except Exception as e:
+
+        print(
+            "Scheduler could not start:",
+            e,
+        )
+
+
+# ============================================================
+# END
+# ============================================================
