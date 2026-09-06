@@ -776,6 +776,138 @@ def reset_password(
     }
 
 
+
+# ============================================================
+# PRODUCT CATEGORY DETECTOR
+# ============================================================
+
+def detect_category(product_name: str) -> str:
+    name = (product_name or "").strip().lower()
+
+    rules = {
+        "Mobiles & Accessories": [
+            "smartphone", "mobile phone", "mobile", "iphone", "ipad",
+            "oneplus", "samsung galaxy", "redmi", "realme", "vivo",
+            "oppo", "pixel", "phone case", "mobile cover", "charger",
+            "power bank", "screen protector"
+        ],
+        "Laptops & Computers": [
+            "laptop", "notebook", "macbook", "chromebook", "desktop",
+            "computer", "monitor", "keyboard", "mouse", "webcam",
+            "ssd", "hard disk", "ram", "graphics card", "gpu",
+            "printer", "router"
+        ],
+        "Audio & Headphones": [
+            "headphone", "headset", "earphone", "earbud", "airpods",
+            "speaker", "soundbar", "microphone"
+        ],
+        "Cameras & Accessories": [
+            "camera", "dslr", "mirrorless", "action camera", "camcorder",
+            "lens", "tripod", "camera bag"
+        ],
+        "Gaming": [
+            "gaming", "playstation", "ps5", "ps4", "xbox", "nintendo",
+            "controller", "gamepad", "video game"
+        ],
+        "Beauty & Makeup": [
+            "makeup", "lipstick", "foundation", "concealer", "mascara",
+            "eyeliner", "blush", "cosmetic", "perfume", "fragrance",
+            "nail polish"
+        ],
+        "Skincare": [
+            "skincare", "skin care", "face wash", "cleanser", "serum",
+            "moisturizer", "moisturiser", "sunscreen", "face cream",
+            "toner", "scrub", "face mask"
+        ],
+        "Hair Care": [
+            "shampoo", "conditioner", "hair oil", "hair serum", "hair mask",
+            "hair dryer", "straightener", "hair curler", "trimmer"
+        ],
+        "Shoes & Footwear": [
+            "shoe", "shoes", "sneaker", "sandals", "slipper",
+            "flip flop", "boots", "heels", "loafers", "footwear"
+        ],
+        "Bags & Accessories": [
+            "bag", "backpack", "handbag", "wallet", "purse", "sling bag",
+            "belt", "sunglasses", "accessory", "accessories"
+        ],
+        "Jewellery": [
+            "jewellery", "jewelry", "necklace", "earring", "bracelet",
+            "bangle", "ring", "chain", "pendant"
+        ],
+        "Watches": ["watch", "watches", "smartwatch", "smart watch"],
+        "Fashion & Clothing": [
+            "shirt", "t-shirt", "tshirt", "jeans", "trouser", "pant",
+            "dress", "kurti", "saree", "sari", "top", "jacket", "coat",
+            "hoodie", "sweater", "shorts", "skirt", "clothing", "fashion",
+            "ethnic wear", "western wear"
+        ],
+        "Kitchen Appliances": [
+            "mixer", "grinder", "mixer grinder", "air fryer", "microwave",
+            "oven", "toaster", "kettle", "induction", "rice cooker",
+            "blender", "juicer", "dishwasher", "refrigerator", "fridge"
+        ],
+        "Furniture": [
+            "sofa", "chair", "table", "bed", "mattress", "wardrobe",
+            "cabinet", "bookshelf", "furniture", "dining table"
+        ],
+        "Home Decor": [
+            "home decor", "decoration", "curtain", "carpet", "rug",
+            "wall art", "painting", "showpiece", "lamp", "cushion", "vase"
+        ],
+        "Home & Kitchen": [
+            "kitchen", "cookware", "utensil", "pan", "pot", "pressure cooker",
+            "bottle", "storage", "cleaning", "vacuum cleaner", "home appliance"
+        ],
+        "Books & Education": [
+            "book", "books", "novel", "textbook", "notebook", "study",
+            "education", "stationery", "pen", "pencil", "exam"
+        ],
+        "Toys & Kids": [
+            "toy", "toys", "kids", "kid", "children", "doll", "lego",
+            "puzzle", "remote control car", "teddy"
+        ],
+        "Baby Products": [
+            "baby", "diaper", "nappy", "feeding bottle", "baby food",
+            "baby stroller", "baby care", "infant", "newborn"
+        ],
+        "Fitness & Sports": [
+            "fitness", "gym", "yoga", "dumbbell", "treadmill", "exercise",
+            "sports", "cricket", "football", "badminton", "basketball",
+            "running", "cycle", "bicycle", "fitness band"
+        ],
+        "Pet Supplies": [
+            "pet", "dog food", "cat food", "pet food", "dog", "cat",
+            "pet toy", "pet bed", "leash", "aquarium"
+        ],
+        "Travel Accessories": [
+            "travel", "luggage", "suitcase", "trolley bag", "travel bag",
+            "passport holder", "neck pillow", "travel adapter"
+        ],
+        "Car & Bike Accessories": [
+            "car accessories", "bike accessories", "motorcycle", "scooter",
+            "helmet", "car cover", "bike cover", "dashcam", "tyre",
+            "automotive", "car", "bike"
+        ],
+        "Grocery & Daily Essentials": [
+            "grocery", "rice", "wheat", "flour", "dal", "oil", "sugar",
+            "salt", "snacks", "biscuit", "coffee", "tea", "soap",
+            "detergent", "toothpaste", "toothbrush", "household"
+        ],
+        "Gifts": ["gift", "gifts", "gift set", "gift box", "hamper"],
+        "Electronics": [
+            "electronics", "television", "led tv", "smart tv",
+            "tablet", "power adapter", "cable", "usb", "smart device"
+        ],
+    }
+
+    for category, keywords in rules.items():
+        if any(keyword in name for keyword in keywords):
+            return category
+
+    return "Others"
+
+
 # ============================================================
 # PRODUCTS
 # ============================================================
@@ -794,7 +926,7 @@ def list_products(
     user: models.User = Depends(get_current_user),
 ):
 
-    return (
+    products = (
         db.query(models.Product)
         .filter(
             models.Product.owner_id == user.id
@@ -804,6 +936,19 @@ def list_products(
         )
         .all()
     )
+
+    # Automatically categorize old products too.
+    changed = False
+
+    for product in products:
+        if not product.category or product.category == "Other":
+            product.category = detect_category(product.name)
+            changed = True
+
+    if changed:
+        db.commit()
+
+    return products
 
 
 # ============================================================
@@ -871,7 +1016,7 @@ def add_product(
 
         image_url=scraped.get("image_url"),
 
-        category=scraped.get("category"),
+        category=detect_category(scraped.get("name", "")),
 
         group_id=group_id,
 
@@ -958,7 +1103,7 @@ def add_product(
 
                 image_url=match.get("image_url"),
 
-                category=match.get("category"),
+                category=detect_category(match.get("name", scraped.get("name", ""))),
 
                 group_id=group_id,
 

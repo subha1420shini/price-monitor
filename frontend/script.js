@@ -2329,123 +2329,215 @@ function drawSiteBar(group) {
 
 function renderProductsPage() {
 
-  const categories = [
-    "All",
-    ...new Set(
-      allProducts.map(
-        (product) =>
-          product.category ||
-          "Other"
-      )
-    )
-  ];
+    // ----------------------------------------------------------
+    // ALL AVAILABLE CATEGORIES
+    // ----------------------------------------------------------
+
+    const categories = [
+        "All",
+        "Fashion & Clothing",
+        "Shoes & Footwear",
+        "Beauty & Makeup",
+        "Skincare",
+        "Hair Care",
+        "Bags & Accessories",
+        "Jewellery",
+        "Watches",
+        "Mobiles & Accessories",
+        "Electronics",
+        "Laptops & Computers",
+        "Audio & Headphones",
+        "Cameras & Accessories",
+        "Home & Kitchen",
+        "Kitchen Appliances",
+        "Furniture",
+        "Home Decor",
+        "Books & Education",
+        "Gaming",
+        "Toys & Kids",
+        "Baby Products",
+        "Fitness & Sports",
+        "Pet Supplies",
+        "Travel Accessories",
+        "Car & Bike Accessories",
+        "Grocery & Daily Essentials",
+        "Gifts",
+        "Others"
+    ];
 
 
-  const categoryChips =
-    document.getElementById(
-      "categoryChips"
-    );
+    // ----------------------------------------------------------
+    // CATEGORY CHIPS
+    // ----------------------------------------------------------
+
+    const categoryChips =
+        document.getElementById("categoryChips");
+
+    if (categoryChips) {
+
+        categoryChips.innerHTML =
+            categories
+                .map(category => {
+
+                    const isActive =
+                        category.toLowerCase() ===
+                        activeCategory.toLowerCase();
+
+                    return `
+                        <button
+                            type="button"
+                            class="chip ${isActive ? "active" : ""}"
+                            onclick="setCategory('${category.replace(/'/g, "\\'")}')"
+                        >
+                            ${category}
+                        </button>
+                    `;
+
+                })
+                .join("");
+    }
 
 
-  if (categoryChips) {
+    // ----------------------------------------------------------
+    // SEARCH
+    // ----------------------------------------------------------
 
-    categoryChips.innerHTML =
-      categories
-        .map(
-          (category) => `
+    const searchInput =
+        document.getElementById("searchInput");
 
-            <div
-              class="
-                chip
-                ${
-                  category ===
-                  activeCategory
-                    ? "active"
-                    : ""
-                }
-              "
-              onclick="
-                setCategory(
-                  '${category.replace(
-                    /'/g,
-                    "\\'"
-                  )}'
-                )
-              "
-            >
-              ${category}
+    const query =
+        searchInput
+            ? searchInput.value.trim().toLowerCase()
+            : "";
+
+
+    // ----------------------------------------------------------
+    // CATEGORY + SEARCH FILTER
+    // ----------------------------------------------------------
+
+    let filtered =
+        allProducts.filter(product => {
+
+            const productCategory =
+                String(product.category || "")
+                    .trim()
+                    .toLowerCase();
+
+            const selectedCategory =
+                String(activeCategory || "All")
+                    .trim()
+                    .toLowerCase();
+
+
+            // Category filter
+            const categoryMatch =
+                selectedCategory === "all" ||
+                productCategory === selectedCategory;
+
+
+            // Search filter
+            const searchMatch =
+                !query ||
+                String(product.name || "")
+                    .toLowerCase()
+                    .includes(query) ||
+
+                String(product.site || "")
+                    .toLowerCase()
+                    .includes(query) ||
+
+                String(product.category || "")
+                    .toLowerCase()
+                    .includes(query);
+
+
+            return categoryMatch && searchMatch;
+        });
+
+
+    // ----------------------------------------------------------
+    // GROUP PRODUCTS
+    // ----------------------------------------------------------
+
+    const groups =
+        groupProducts(filtered);
+
+
+    // ----------------------------------------------------------
+    // PRODUCTS GRID
+    // ----------------------------------------------------------
+
+    const productsGrid =
+        document.getElementById("productsGrid");
+
+
+    if (!productsGrid) return;
+
+
+    // ----------------------------------------------------------
+    // EMPTY STATE
+    // ----------------------------------------------------------
+
+    if (groups.length === 0) {
+
+        productsGrid.innerHTML = `
+            <div class="empty-state">
+                <h3>No products found</h3>
+
+                <p>
+                    No products found in
+                    "${activeCategory}".
+                </p>
             </div>
+        `;
 
-          `
-        )
-        .join("");
-  }
-
-
-  const searchInput =
-    document.getElementById(
-      "searchInput"
-    );
+        return;
+    }
 
 
-  const query =
-    (
-      searchInput
-        ? searchInput.value
-        : ""
-    )
-      .toLowerCase();
-
-
-  let filtered =
-    activeCategory === "All"
-
-      ? allProducts
-
-      : allProducts.filter(
-          (product) =>
-            (
-              product.category ||
-              "Other"
-            ) ===
-            activeCategory
-        );
-
-
-  filtered =
-    filtered.filter(
-      (product) =>
-        product.name
-          .toLowerCase()
-          .includes(query)
-    );
-
-
-  const groups =
-    groupProducts(
-      filtered
-    );
-
-
-  const productsGrid =
-    document.getElementById(
-      "productsGrid"
-    );
-
-
-  if (productsGrid) {
+    // ----------------------------------------------------------
+    // RENDER PRODUCTS
+    // ----------------------------------------------------------
 
     productsGrid.innerHTML =
-      groups
-        .map(productCardHTML)
-        .join("")
-      ||
-      `
-        <p class="sub">
-          No products match.
-        </p>
-      `;
-  }
+        groups
+            .map(productCardHTML)
+            .join("");
+}
+
+
+// ============================================================
+// CATEGORY FILTER
+// ============================================================
+
+function setCategory(category) {
+
+    activeCategory = category;
+
+    currentPage = 1;
+
+    renderProductsPage();
+}
+
+
+// ============================================================
+// PRODUCT SEARCH
+// ============================================================
+
+const searchInput =
+    document.getElementById("searchInput");
+
+if (searchInput) {
+
+    searchInput.addEventListener(
+        "input",
+        () => {
+
+            currentPage = 1;
+
+            renderProductsPage();
+        }
+    );
 }
 
 
