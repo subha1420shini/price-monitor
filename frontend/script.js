@@ -2507,65 +2507,27 @@ function renderProductsPage() {
 
 
 // ============================================================
-// CATEGORY FILTER
+// CATEGORY FILTER & PRODUCT SEARCH
 // ============================================================
 
 function setCategory(category) {
 
     activeCategory = category;
 
-    currentPage = 1;
-
     renderProductsPage();
 }
 
 
-// ============================================================
-// PRODUCT SEARCH
-// ============================================================
-
-const searchInput =
+const productSearchInput =
     document.getElementById("searchInput");
 
-if (searchInput) {
 
-    searchInput.addEventListener(
+if (productSearchInput) {
+
+    productSearchInput.addEventListener(
         "input",
-        () => {
-
-            currentPage = 1;
-
-            renderProductsPage();
-        }
+        renderProductsPage
     );
-}
-
-
-// ============================================================
-// CATEGORY FILTER
-// ============================================================
-
-function setCategory(category) {
-
-  activeCategory =
-    category;
-
-  renderProductsPage();
-}
-
-
-const searchInput =
-  document.getElementById(
-    "searchInput"
-  );
-
-
-if (searchInput) {
-
-  searchInput.addEventListener(
-    "input",
-    renderProductsPage
-  );
 }
 
 
